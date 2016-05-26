@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:orientation="vertical"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+
+    tools:context="com.asus.sheldon.camera4fun.MainActivity"
+    android:weightSum="1">
+
+    <FrameLayout
+        android:id="@+id/camera_preview"
+        android:layout_height="match_parent"
+        android:layout_width="match_parent"
+        android:padding="1dip" >
+
+        <Button
+            android:id="@+id/button_capture"
+            android:text="拍照"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal|bottom" />
+
+        <Button
+            android:id="@+id/button_switch"
+            android:text="切换"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal|top" />
+
+        <Button
+            android:text="分辨率     ↓"
+            android:layout_width="51dp"
+            android:layout_height="40dp"
+            android:background="@android:color/transparent"
+            android:textColor="#666666" />
+
+        <Button
+            android:text="闪光灯     ↓"
+            android:layout_width="42dp"
+            android:layout_height="40dp"
+            android:background="@android:color/transparent"
+            android:textColor="#666666"
+            android:layout_gravity="right|top" />
+
+
+        <Spinner
+            android:id="@+id/resolution"
+            android:layout_width="91dp"
+            android:layout_height="188dp"
+            android:background="#dddddd"
+            android:padding="5dip"
+            android:layout_gravity="left|top" />
+
+        <Spinner
+            android:id="@+id/flashMode"
+            android:layout_width="69dp"
+            android:layout_height="117dp"
+            android:entries="@array/flashModeList"
+            android:background="#cccccc"
+            android:padding="5dip"
+            android:layout_gravity="right|top" />
+
+    </FrameLayout>
+
+</LinearLayout>
