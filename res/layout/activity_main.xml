@@ -13,7 +13,12 @@
         android:id="@+id/camera_preview"
         android:layout_height="match_parent"
         android:layout_width="match_parent"
-        android:padding="1dip" >
+        android:padding="0dip" >
+
+        <SurfaceView
+            android:id="@+id/preView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
 
         <Button
             android:id="@+id/button_capture"
@@ -30,37 +35,37 @@
             android:layout_gravity="center_horizontal|top" />
 
         <Button
-            android:text="分辨率     ↓"
-            android:layout_width="51dp"
-            android:layout_height="40dp"
-            android:background="@android:color/transparent"
-            android:textColor="#666666" />
-
-        <Button
-            android:text="闪光灯     ↓"
-            android:layout_width="42dp"
-            android:layout_height="40dp"
-            android:background="@android:color/transparent"
-            android:textColor="#666666"
-            android:layout_gravity="right|top" />
+            android:id="@+id/button_video"
+            android:text="录影"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="left|bottom" />
 
 
         <Spinner
             android:id="@+id/resolution"
-            android:layout_width="91dp"
-            android:layout_height="188dp"
-            android:background="#dddddd"
+            android:layout_width="107dp"
+            android:layout_height="42dp"
             android:padding="5dip"
             android:layout_gravity="left|top" />
 
         <Spinner
             android:id="@+id/flashMode"
-            android:layout_width="69dp"
-            android:layout_height="117dp"
+            android:layout_width="93dp"
+            android:layout_height="37dp"
             android:entries="@array/flashModeList"
-            android:background="#cccccc"
             android:padding="5dip"
-            android:layout_gravity="right|top" />
+            android:layout_gravity="right|top"
+            android:background="@android:color/transparent" />
+
+        <TextView
+            android:id="@+id/timer"
+            android:text="计时器"
+            android:layout_width="99dp"
+            android:layout_height="63dp"
+            android:textColor="#888888"
+            android:layout_gravity="left|center_vertical" />
+
 
     </FrameLayout>
 
