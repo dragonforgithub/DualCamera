@@ -37,7 +37,7 @@ class sMediaRecorder extends SurfaceView implements SurfaceHolder.Callback{
 
     public sMediaRecorder(Context context,SurfaceView sv) {
         super(context);
-        Log.e(TAG, "create sMediaRecorder:");
+        Log.i(TAG, "create sMediaRecorder:");
         mContext = context;
         mMediaHolder= sv.getHolder();
 
@@ -64,7 +64,7 @@ class sMediaRecorder extends SurfaceView implements SurfaceHolder.Callback{
     }
 
     public void surfaceCreated(SurfaceHolder holder) {
-        Log.e(TAG, "recorder surfaceCreated:");
+        Log.i(TAG, "recorder surfaceCreated:");
         SurfaceHolder surfaceHolder = holder;
 
     }
