@@ -35,12 +35,13 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.Spinner;
+import android.widget.TextView;
 import android.widget.Toast;
 
 public class MainActivity extends Activity {
 
     SurfaceView previewCamera=null;
-
+    TextView timerTV=null;
     private Camera mCamera;
     private CameraPreview mCameraSurPreview = null;
     private sMediaRecorder mSurRecorder = null;
@@ -108,7 +109,9 @@ public class MainActivity extends Activity {
             // Create Preview and video recorder
             previewCamera = (SurfaceView) this.findViewById(R.id.preView);
             mCameraSurPreview = new CameraPreview(this, mCamera, previewCamera);
-            mSurRecorder = new sMediaRecorder(this, previewCamera);
+            timerTV = (TextView) this.findViewById(R.id.videoTimer);
+            timerTV.setVisibility(View.INVISIBLE);
+            mSurRecorder = new sMediaRecorder(this, previewCamera, timerTV);
 
 
             InitPinnerOther(mCamera); //设置前镜下拉列表
@@ -212,7 +215,7 @@ public class MainActivity extends Activity {
         spinner_res=(Spinner)findViewById(R.id.resolution);
         spinner_res.setAdapter(adapter_res);
         //設置背景顏色
-        //spinner.setBackgroundColor(Color.parseColor("#111111"));
+        //spinner_res.setBackgroundColor(Color.parseColor("#111111"));
         //添加事件Spinner事件监听
         spinner_res.setOnItemSelectedListener(new SpinnerSelectedListener());
 

@@ -12,7 +12,9 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.WindowManager;
+import android.widget.FrameLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.io.File;
 import java.io.IOException;
@@ -29,17 +31,22 @@ class sMediaRecorder extends SurfaceView implements SurfaceHolder.Callback{
     private MediaRecorder mMediaRecorder = null;
     private File mRecVedioPath=null;
     private File mRecAudioFile=null;
-    private TextView timer = null;
+    private TextView vtimer = null;
     private int hour = 0;
     private int minute = 0;
     private int second = 0;
 
 
-    public sMediaRecorder(Context context,SurfaceView sv) {
+    public sMediaRecorder(Context context,SurfaceView sv, TextView tv) {
         super(context);
         Log.i(TAG, "create sMediaRecorder:");
         mContext = context;
         mMediaHolder= sv.getHolder();
+
+        vtimer = tv;
+        if(vtimer == null){
+            Log.e(TAG, "vtimer is null!");
+        }
 
         // Install a SurfaceHolder.Callback so we get notified when the
         // underlying surface is created and destroyed.
@@ -48,8 +55,6 @@ class sMediaRecorder extends SurfaceView implements SurfaceHolder.Callback{
             mMediaHolder.addCallback(this); //添加回调
             // deprecated setting, but required on Android versions prior to 3.0
             mMediaHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
-
-            timer = (TextView) findViewById(R.id.timer);
 
             /*
             WindowManager wm = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
@@ -66,7 +71,6 @@ class sMediaRecorder extends SurfaceView implements SurfaceHolder.Callback{
     public void surfaceCreated(SurfaceHolder holder) {
         Log.i(TAG, "recorder surfaceCreated:");
         SurfaceHolder surfaceHolder = holder;
-
     }
 
     @Override
@@ -100,8 +104,8 @@ class sMediaRecorder extends SurfaceView implements SurfaceHolder.Callback{
                     hour++;
                     minute = minute % 60;
                 }
-                //timer.setText(format(hour)+":"+format(minute)+":"+format(second));
-                Log.d(TAG, "timer-"+format(hour)+":"+format(minute)+":"+format(second));
+                vtimer.setText(format(hour)+":"+format(minute)+":"+format(second));
+                //Log.d(TAG, "timer-"+format(hour)+":"+format(minute)+":"+format(second));
         }
     };
 
@@ -115,13 +119,14 @@ class sMediaRecorder extends SurfaceView implements SurfaceHolder.Callback{
     }
 
     public void startRecording(Camera vCamera) {
-        Log.i(TAG, "startRecording:");
+        Log.i(TAG, "start Recording:");
 
         vCamera.unlock(); //让media程序存取到相機
 
-        second = 0;
-        minute = 0;
-        hour = 0;
+        //second = 0;
+        //minute = 0;
+        //hour = 0;
+        vtimer.setText(format(hour=0)+":"+format(minute=0)+":"+format(second=0));
 
         if (mMediaRecorder == null)
             mMediaRecorder = new MediaRecorder();
@@ -136,8 +141,8 @@ class sMediaRecorder extends SurfaceView implements SurfaceHolder.Callback{
         mMediaRecorder.setOutputFormat(android.media.MediaRecorder.OutputFormat.THREE_GPP);
         mMediaRecorder.setVideoEncoder(android.media.MediaRecorder.VideoEncoder.H264);
         mMediaRecorder.setAudioEncoder(android.media.MediaRecorder.AudioEncoder.AMR_NB);
-        mMediaRecorder.setVideoSize(320, 240);
-        mMediaRecorder.setVideoFrameRate(15);
+        mMediaRecorder.setVideoSize(1920,1080);
+        mMediaRecorder.setVideoFrameRate(20);
         mMediaRecorder.setPreviewDisplay(mMediaHolder.getSurface());
         //mMediaRecorder.setOrientationHint(90);
 
@@ -159,7 +164,7 @@ class sMediaRecorder extends SurfaceView implements SurfaceHolder.Callback{
         mMediaRecorder.setOutputFile(mRecAudioFile.getAbsolutePath());
 
         try {
-            //timer.setVisibility(VISIBLE);
+            vtimer.setVisibility(VISIBLE);
             handler.postDelayed(task, 1000);
             mMediaRecorder.prepare();
             mMediaRecorder.start();
@@ -170,12 +175,12 @@ class sMediaRecorder extends SurfaceView implements SurfaceHolder.Callback{
     }
 
     public void stopRecording(Camera vCamera) {
-        Log.i(TAG, "startRecording:");
+        Log.i(TAG, "stop Recording:");
 
         try {
+                vtimer.setVisibility(INVISIBLE);
                 if(mMediaRecorder != null){
                     handler.removeCallbacks(task);
-                    //timer.setVisibility(INVISIBLE);
                     mMediaRecorder.stop();
                     mMediaRecorder.release();
                     mMediaRecorder = null;
@@ -185,6 +190,6 @@ class sMediaRecorder extends SurfaceView implements SurfaceHolder.Callback{
                 e.printStackTrace();
             }
 
-            //showMsg("录制完成，已保存");
+           // Toast.makeText(this, "", Toast.LENGTH_LONG).show();
         }
 }
