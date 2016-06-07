@@ -118,7 +118,7 @@ class sMediaRecorder extends SurfaceView implements SurfaceHolder.Callback{
         return s;
     }
 
-    public void startRecording(Camera vCamera) {
+    public void startRecording(Camera vCamera, int vCameraId) {
         Log.i(TAG, "start Recording:");
 
         vCamera.unlock(); //让media程序存取到相機
@@ -137,14 +137,15 @@ class sMediaRecorder extends SurfaceView implements SurfaceHolder.Callback{
         //init recorder parameter
         mMediaRecorder.setVideoSource(android.media.MediaRecorder.VideoSource.CAMERA);
         mMediaRecorder.setAudioSource(android.media.MediaRecorder.AudioSource.MIC);
-        //mMediaRecorder.setProfile(CamcorderProfile.get(CamcorderProfile.QUALITY_HIGH));
-        mMediaRecorder.setOutputFormat(android.media.MediaRecorder.OutputFormat.THREE_GPP);
+        mMediaRecorder.setOutputFormat(android.media.MediaRecorder.OutputFormat.MPEG_4);
         mMediaRecorder.setVideoEncoder(android.media.MediaRecorder.VideoEncoder.H264);
         mMediaRecorder.setAudioEncoder(android.media.MediaRecorder.AudioEncoder.AMR_NB);
+        //mMediaRecorder.setProfile(CamcorderProfile.get(CamcorderProfile.QUALITY_720P));
         mMediaRecorder.setVideoSize(1920,1080);
+        mMediaRecorder.setVideoEncodingBitRate(100*1024*1024); //设置帧率调节清晰度
         mMediaRecorder.setVideoFrameRate(20);
         mMediaRecorder.setPreviewDisplay(mMediaHolder.getSurface());
-        //mMediaRecorder.setOrientationHint(90);
+
 
         //设置缓存路径
         mRecVedioPath = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + "/video/temp/");
@@ -155,13 +156,17 @@ class sMediaRecorder extends SurfaceView implements SurfaceHolder.Callback{
         }
 
         try {
-            mRecAudioFile = File.createTempFile("Vedio", ".3gp", mRecVedioPath);
+            mRecAudioFile = File.createTempFile("Vedio", ".mp4", mRecVedioPath);
         } catch (IOException e) {
             Log.e(TAG, "createTempFile error!");
             e.printStackTrace();
         }
 
         mMediaRecorder.setOutputFile(mRecAudioFile.getAbsolutePath());
+        if(vCameraId == 1){
+            mMediaRecorder.setOrientationHint(180);
+        }
+
 
         try {
             vtimer.setVisibility(VISIBLE);
