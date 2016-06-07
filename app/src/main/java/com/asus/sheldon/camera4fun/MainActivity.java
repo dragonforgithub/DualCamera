@@ -58,6 +58,8 @@ public class MainActivity extends Activity {
 
     private List<Camera.Size> supportedPreviewSizes;
     private List<Camera.Size> supportedPictureSizes;
+    private List<String> supportedFlashMode;
+    private List<String> supportedFocuseMode;
     private List<String> list_resolution=new ArrayList<String>();
 
     private Spinner spinner_res;
@@ -113,16 +115,19 @@ public class MainActivity extends Activity {
             timerTV.setVisibility(View.INVISIBLE);
             mSurRecorder = new sMediaRecorder(this, previewCamera, timerTV);
 
-
-            InitPinnerOther(mCamera); //设置前镜下拉列表
-
             Camera.Parameters parameters = mCamera.getParameters();
             currentFocusMode = parameters.getFocusMode();//保存默认对焦模式
+
+            InitPinnerOther(mCamera); //设置前镜下拉列表
 
             picWidth=Integer.parseInt((String.valueOf(supportedPictureSizes.get(0).width)));
             picHeight=Integer.parseInt((String.valueOf(supportedPictureSizes.get(0).height)));
             parameters.setPictureSize(picWidth, picHeight);
             parameters.setPreviewSize(supportedPreviewSizes.get(0).width,supportedPreviewSizes.get(0).height);
+            parameters.setRotation(90); //default picture rotation
+
+            mCamera.setParameters(parameters);
+
 
             mCamera.startPreview();
             mCamera.setFaceDetectionListener(faceDetect);
@@ -190,14 +195,37 @@ public class MainActivity extends Activity {
         ArrayAdapter<String> adapter_res;
         Camera.Parameters parameters = pCamera.getParameters();
 
-        parameters.setFlashMode(currentFlashMode);
-        parameters.setPictureFormat(256); //JPEG
-        mCamera.setParameters(parameters);
-
         //get current preview size list
         supportedPreviewSizes = parameters.getSupportedPreviewSizes();
         //get current picture size list
         supportedPictureSizes = parameters.getSupportedPictureSizes();
+
+        //get camera capbility ------
+        supportedFlashMode = parameters.getSupportedFlashModes();
+        supportedFocuseMode = parameters.getSupportedFocusModes();
+
+        if(supportedFlashMode == null || supportedFlashMode.isEmpty()){
+            Log.e(TAG, "supportedFlashMode : Null");
+            parameters.setFlashMode(parameters.FLASH_MODE_OFF);
+        }else {
+            for(int i=0;i<supportedFlashMode.size();i++){
+                Log.e(TAG, "supportedFlashMode : "+supportedFlashMode.get(i).toString());
+            }
+            parameters.setFlashMode(currentFlashMode);
+        }
+
+        if(supportedFocuseMode == null || supportedFocuseMode.isEmpty()){
+            Log.e(TAG, "supportedFlashMode : Null");
+            parameters.setFocusMode(parameters.FOCUS_MODE_INFINITY);
+        }else {
+            for(int i=0;i<supportedFocuseMode.size();i++){
+                Log.e(TAG, "supportedFocuseMode : "+supportedFocuseMode.get(i).toString());
+            }
+            parameters.setFocusMode(currentFocusMode);
+        }
+
+        parameters.setPictureFormat(256); //JPEG
+        mCamera.setParameters(parameters);
 
 
         list_resolution.clear();
@@ -293,10 +321,9 @@ public class MainActivity extends Activity {
                 return;
             }
 
-            faceDetect.stopFaceDetection(mCamera);
-            mCamera.stopPreview();
+            //faceDetect.stopFaceDetection(mCamera);
+            //mCamera.stopPreview();
 
-            //use this function can correct pic direction but slowly
             /*
             try {
                 BufferedOutputStream bocameras = null;
@@ -316,7 +343,6 @@ public class MainActivity extends Activity {
             }
             */
 
-            //this function quickly but can`t edit
             try {
                 if (data != null && pictureFile != null){
                     File rawOutput = new File(pictureFile);
@@ -341,6 +367,8 @@ public class MainActivity extends Activity {
         @Override
         public void onClick(View v) {
 
+            Camera.Parameters parameters =null;
+
             switch (v.getId()) {
                 case R.id.button_capture:
                     Log.d(TAG,"Take pic-flash mode:"+mCamera.getParameters().getFlashMode());
@@ -364,6 +392,10 @@ public class MainActivity extends Activity {
 
                             mCamera = Camera.open(mCameraindex);
                             mCamera.setDisplayOrientation(90);
+                            parameters = mCamera.getParameters();
+                            parameters.setRotation(270);
+                            mCamera.setParameters(parameters);
+
                             try {
                                 mCamera.setPreviewDisplay(previewCamera.getHolder());//通过surfaceview显示取景画面
                             } catch (IOException e) {
@@ -381,6 +413,9 @@ public class MainActivity extends Activity {
 
                             mCamera = Camera.open(mCameraindex);
                             mCamera.setDisplayOrientation(90);
+                            parameters = mCamera.getParameters();
+                            parameters.setRotation(180);
+                            mCamera.setParameters(parameters);
                             try {
                                 mCamera.setPreviewDisplay(previewCamera.getHolder());//通过surfaceview显示取景画面
                             } catch (IOException e) {
@@ -400,45 +435,25 @@ public class MainActivity extends Activity {
                     if(isRecording == false){
                         spinner_res.setVisibility(View.INVISIBLE);
                         spinner_flash.setVisibility(View.INVISIBLE);
-                        mCaptureButton.setVisibility(View.INVISIBLE);
+                        //mCaptureButton.setVisibility(View.INVISIBLE);
                         mSwitchButton.setVisibility(View.INVISIBLE);
                         mVideoButton.setText("停止");
-                        faceDetect.stopFaceDetection(mCamera);
-                        mCamera.stopPreview();
-                        mSurRecorder.startRecording(mCamera);
+                        mSurRecorder.startRecording(mCamera, mCameraID);
                         isRecording = true;
                     }
                     else{
                         spinner_res.setVisibility(View.VISIBLE);
                         spinner_flash.setVisibility(View.VISIBLE);
-                        mCaptureButton.setVisibility(View.VISIBLE);
+                        //mCaptureButton.setVisibility(View.VISIBLE);
                         mSwitchButton.setVisibility(View.VISIBLE);
                         mVideoButton.setText("录影");
                         mSurRecorder.stopRecording(mCamera);
-
-                        //create a new camera
-                        if(mCamera != null){
-                            faceDetect.stopFaceDetection(mCamera);
-                            mCamera.stopPreview();//停掉原来摄像头的预览
-                            mCamera.release();//释放资源
-                            mCamera = null;//取消原来摄像头
-                        }
-
-                        mCamera = Camera.open(mCameraindex);
-                        Camera.Parameters parameters = mCamera.getParameters();
-                        parameters.setFlashMode(currentFlashMode);
-                        parameters.setPictureFormat(256); //JPEG
-                        mCamera.setParameters(parameters);
-                        mCamera.setDisplayOrientation(90);
                         try {
-                            mCamera.setPreviewDisplay(previewCamera.getHolder());//通过surfaceview显示取景画面
+                            mCamera.reconnect();
                         } catch (IOException e) {
                             e.printStackTrace();
-                            Log.e(TAG, "setPreviewDisplay error!");
                         }
 
-                        mCamera.startPreview(); //开始预览
-                        faceDetect.startFaceDetection(mCamera); //add face detection after preview
                         isRecording = false;
                     }
                     break;
