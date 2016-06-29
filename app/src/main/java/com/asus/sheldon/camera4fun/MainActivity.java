@@ -52,6 +52,7 @@ public class MainActivity extends Activity {
     private int mCameraID = 0;
     private int mCameraindex = 0;
     private boolean isRecording=false;
+    private static boolean issupportFocuse=false;
 
     private int picWidth;
     private int picHeight;
@@ -104,10 +105,9 @@ public class MainActivity extends Activity {
                     return;
             }
 
-            Log.d(TAG, "open camera:"+mCameraindex);
             mCamera = Camera.open(mCameraindex);
             mCamera.setDisplayOrientation(90);
-
+            Log.d(TAG, "open camera:"+mCameraindex);
             // Create Preview and video recorder
             previewCamera = (SurfaceView) this.findViewById(R.id.preView);
             mCameraSurPreview = new CameraPreview(this, mCamera, previewCamera);
@@ -131,7 +131,7 @@ public class MainActivity extends Activity {
 
             mCamera.startPreview();
             mCamera.setFaceDetectionListener(faceDetect);
-            faceDetect.startFaceDetection(mCamera); //add face detection after preview
+            //faceDetect.startFaceDetection(mCamera); //add face detection after preview
             Log.d(TAG, "camera open finish");
 
             // Add a listener to the Capture button
@@ -148,7 +148,7 @@ public class MainActivity extends Activity {
 
         } catch (Exception e) {
             // TODO: handle exception
-            Log.e(TAG, "camera open fail");
+            Log.e(TAG,e.getMessage());
             Toast.makeText(this, "camera open fail", Toast.LENGTH_LONG).show();
             finish();
             return;
@@ -214,18 +214,21 @@ public class MainActivity extends Activity {
             parameters.setFlashMode(currentFlashMode);
         }
 
+        issupportFocuse=false;
         if(supportedFocuseMode == null || supportedFocuseMode.isEmpty()){
             Log.e(TAG, "supportedFlashMode : Null");
-            parameters.setFocusMode(parameters.FOCUS_MODE_INFINITY);
         }else {
             for(int i=0;i<supportedFocuseMode.size();i++){
                 Log.e(TAG, "supportedFocuseMode : "+supportedFocuseMode.get(i).toString());
+                if(supportedFocuseMode.get(i).equals("auto")){
+                    issupportFocuse=true;
+                    parameters.setFocusMode(parameters.FOCUS_MODE_AUTO);
+                }
             }
-            parameters.setFocusMode(currentFocusMode);
         }
 
         parameters.setPictureFormat(256); //JPEG
-        mCamera.setParameters(parameters);
+        pCamera.setParameters(parameters);
 
 
         list_resolution.clear();
@@ -351,7 +354,6 @@ public class MainActivity extends Activity {
                     outStream.close();
                 }
             }catch(IOException e){
-                Log.e(TAG,"Error save picture");
                 Log.e(TAG,e.getMessage());
             }
 
@@ -359,7 +361,7 @@ public class MainActivity extends Activity {
             //See if need to enable or not
             mCaptureButton.setEnabled(true);
             mCamera.startPreview();
-            faceDetect.startFaceDetection(mCamera);//add face detection after preview
+            //faceDetect.startFaceDetection(mCamera);//add face detection after preview
         }
     };
 
@@ -377,7 +379,7 @@ public class MainActivity extends Activity {
                     break;
                 case R.id.button_switch:
                     if(mCamera != null){
-                        faceDetect.stopFaceDetection(mCamera);
+                        //faceDetect.stopFaceDetection(mCamera);
                         mCamera.stopPreview();//停掉原来摄像头的预览
                         mCamera.release();//释放资源
                         mCamera = null;//取消原来摄像头
@@ -428,7 +430,7 @@ public class MainActivity extends Activity {
                         Log.d(TAG, "Switch to "+mCameraindex);
                         InitPinnerOther(mCamera);
                         mCamera.startPreview(); //开始预览
-                        faceDetect.startFaceDetection(mCamera); //add face detection after preview
+                        //faceDetect.startFaceDetection(mCamera); //add face detection after preview
                     }
                     break;
                 case R.id.button_video:
@@ -477,35 +479,36 @@ public class MainActivity extends Activity {
             List<Camera.Area> meteringAreas = new ArrayList<>();
             meteringAreas.add(new Camera.Area(meteringRect, 400));
             params.setMeteringAreas(meteringAreas);
+            camera.setParameters(params);
         } else {
             Log.e(TAG_TC, "metering areas not supported");
         }
 
         //触摸对焦－－－－－－－－－－－－－－－－－－－－－－－－－
-        Rect focusRect = calculateTapArea(event.getX(), event.getY(), 1f, previewSize);
-        camera.cancelAutoFocus(); //去掉对焦完成后的回调函数
-        if (params.getMaxNumFocusAreas() > 0) {
-            List<Camera.Area> focusAreas = new ArrayList<>();
-            focusAreas.add(new Camera.Area(focusRect, 800));
-            params.setFocusAreas(focusAreas);
-        } else {
-            Log.e(TAG_TC,"focus areas not supported");
-        }
-
-        Log.d(TAG_TC,"Default focus mode:"+currentFocusMode);
-        params.setFocusMode(Camera.Parameters.FOCUS_MODE_MACRO);
-
-        camera.setParameters(params);
-
-        camera.autoFocus(new Camera.AutoFocusCallback() {
-            @Override
-            public void onAutoFocus(boolean success, Camera camera) {
-                Camera.Parameters params = camera.getParameters();
-                params.setFocusMode(currentFocusMode);
-                camera.setParameters(params);
+        if(issupportFocuse){
+            Rect focusRect = calculateTapArea(event.getX(), event.getY(), 1f, previewSize);
+            camera.cancelAutoFocus(); //去掉对焦完成后的回调函数
+            if (params.getMaxNumFocusAreas() > 0) {
+                List<Camera.Area> focusAreas = new ArrayList<>();
+                focusAreas.add(new Camera.Area(focusRect, 800));
+                params.setFocusAreas(focusAreas);
+            } else {
+                Log.e(TAG_TC,"focus areas not supported");
             }
-        });
 
+            Log.d(TAG_TC,"Default focus mode:"+currentFocusMode);
+            params.setFocusMode(Camera.Parameters.FOCUS_MODE_MACRO);
+            camera.setParameters(params);
+
+            camera.autoFocus(new Camera.AutoFocusCallback() {
+                @Override
+                public void onAutoFocus(boolean success, Camera camera) {
+                    Camera.Parameters params = camera.getParameters();
+                    params.setFocusMode(currentFocusMode);
+                    camera.setParameters(params);
+                }
+            });
+        }
     }
 
     //触摸区域计算－－－－－－－－－－－－－－－－－－－－－－－－－－

@@ -83,10 +83,10 @@ class sMediaRecorder extends SurfaceView implements SurfaceHolder.Callback{
     public void surfaceDestroyed(SurfaceHolder holder) {
         Log.d(TAG, "recorder surfaceDestroyed:");
         if(mMediaRecorder != null){
-            mMediaHolder=null;
-            mMediaRecorder.stop();
+            //mMediaRecorder.stop();
             mMediaRecorder.release();
             mMediaRecorder=null;
+            mMediaHolder=null;
         }
     }
 
