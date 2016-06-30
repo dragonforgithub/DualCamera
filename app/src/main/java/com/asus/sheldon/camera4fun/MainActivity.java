@@ -106,7 +106,7 @@ public class MainActivity extends Activity {
             }
 
             mCamera = Camera.open(mCameraindex);
-            mCamera.setDisplayOrientation(90);
+            mCamera.setDisplayOrientation(270);
             Log.d(TAG, "open camera:"+mCameraindex);
             // Create Preview and video recorder
             previewCamera = (SurfaceView) this.findViewById(R.id.preView);
@@ -284,6 +284,10 @@ public class MainActivity extends Activity {
                             parameters.setFlashMode(parameters.FLASH_MODE_OFF);
                             currentFlashMode = parameters.FLASH_MODE_OFF;
                             break;
+                        case 3:
+                            parameters.setFlashMode(parameters.FLASH_MODE_TORCH);
+                            currentFlashMode = parameters.FLASH_MODE_TORCH;
+                            break;
                         default:
                             Toast.makeText(MainActivity.this, "didn`t support!", Toast.LENGTH_LONG).show();
                             break;
@@ -393,7 +397,7 @@ public class MainActivity extends Activity {
                             }
 
                             mCamera = Camera.open(mCameraindex);
-                            mCamera.setDisplayOrientation(90);
+                            mCamera.setDisplayOrientation(270);
                             parameters = mCamera.getParameters();
                             parameters.setRotation(270);
                             mCamera.setParameters(parameters);
@@ -414,7 +418,7 @@ public class MainActivity extends Activity {
                             }
 
                             mCamera = Camera.open(mCameraindex);
-                            mCamera.setDisplayOrientation(90);
+                            mCamera.setDisplayOrientation(270);
                             parameters = mCamera.getParameters();
                             parameters.setRotation(180);
                             mCamera.setParameters(parameters);

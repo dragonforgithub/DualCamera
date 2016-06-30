@@ -3,6 +3,7 @@
     <string-array name="flashModeList">
         <item>AUTO</item>
         <item>ON</item>
-        <item>OFF </item>
+        <item>OFF</item>
+        <item>TORCH</item>
     </string-array>
 </resources>
