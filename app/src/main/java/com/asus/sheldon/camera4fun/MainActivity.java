@@ -22,6 +22,8 @@ import android.hardware.Camera;
 import android.nfc.Tag;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Handler;
+import android.os.Message;
 import android.util.Log;
 import android.util.Size;
 import android.view.MotionEvent;
@@ -71,7 +73,7 @@ public class MainActivity extends Activity {
     private float oldDist = 1f;
 
     //face detection
-    private FaceDetection faceDetect = new FaceDetection();
+    public FaceDetection faceDetect = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -104,48 +106,6 @@ public class MainActivity extends Activity {
                 if (mCameraindex == -1)
                     return;
             }
-
-            mCamera = Camera.open(mCameraindex);
-            mCamera.setDisplayOrientation(270);
-            Log.d(TAG, "open camera:"+mCameraindex);
-            // Create Preview and video recorder
-            previewCamera = (SurfaceView) this.findViewById(R.id.preView);
-            mCameraSurPreview = new CameraPreview(this, mCamera, previewCamera);
-            timerTV = (TextView) this.findViewById(R.id.videoTimer);
-            timerTV.setVisibility(View.INVISIBLE);
-            mSurRecorder = new sMediaRecorder(this, previewCamera, timerTV);
-
-            Camera.Parameters parameters = mCamera.getParameters();
-            currentFocusMode = parameters.getFocusMode();//保存默认对焦模式
-
-            InitPinnerOther(mCamera); //设置前镜下拉列表
-
-            picWidth=Integer.parseInt((String.valueOf(supportedPictureSizes.get(0).width)));
-            picHeight=Integer.parseInt((String.valueOf(supportedPictureSizes.get(0).height)));
-            parameters.setPictureSize(picWidth, picHeight);
-            parameters.setPreviewSize(supportedPreviewSizes.get(0).width,supportedPreviewSizes.get(0).height);
-            parameters.setRotation(90); //default picture rotation
-
-            mCamera.setParameters(parameters);
-
-
-            mCamera.startPreview();
-            mCamera.setFaceDetectionListener(faceDetect);
-            //faceDetect.startFaceDetection(mCamera); //add face detection after preview
-            Log.d(TAG, "camera open finish");
-
-            // Add a listener to the Capture button
-            mCaptureButton = (Button) findViewById(R.id.button_capture);
-            mCaptureButton.setOnClickListener(new ButtonPart());
-
-            // Add a listener to the Switch button
-            mSwitchButton = (Button) findViewById(R.id.button_switch);
-            mSwitchButton.setOnClickListener(new ButtonPart());
-
-            // Add a listener to the video button
-            mVideoButton = (Button) findViewById(R.id.button_video);
-            mVideoButton.setOnClickListener(new ButtonPart());
-
         } catch (Exception e) {
             // TODO: handle exception
             Log.e(TAG,e.getMessage());
@@ -155,6 +115,87 @@ public class MainActivity extends Activity {
         }
     }
 
+    protected void onPause() {
+        super.onPause();
+        Log.v(TAG, "onPause");
+        // Because the Camera object is a shared resource, it's very
+        // important to release it when the activity is paused.
+
+        if(mSurRecorder != null){
+            mSurRecorder.stopRecording();
+        }
+
+        if (mCamera != null) {
+            mCamera.stopPreview();
+            mCamera.setPreviewCallback(null);
+            mCamera.lock();
+            mCamera.release();
+            mCamera=null;
+        }
+
+        mCameraSurPreview = null;
+    }
+
+    protected void onResume() {
+        super.onResume();
+        Log.v(TAG, "onResume");
+        if(mCamera == null){
+
+            faceDetect = new FaceDetection(this,new MainHandler());
+            mCamera = Camera.open(mCameraindex);
+
+            if(mCamera == null) {
+                Log.e(TAG, "error : open camera " + mCameraindex);
+                return;
+            }
+        }
+
+        // Create Preview and video recorder
+        mCamera.setDisplayOrientation(270);
+        previewCamera = (SurfaceView) this.findViewById(R.id.preView);
+        mCameraSurPreview = new CameraPreview(this, mCamera, previewCamera, mCameraindex);
+        timerTV = (TextView) this.findViewById(R.id.videoTimer);
+        timerTV.setVisibility(View.INVISIBLE);
+        mSurRecorder = new sMediaRecorder(this, previewCamera, timerTV);
+
+        Camera.Parameters parameters = mCamera.getParameters();
+        currentFocusMode = parameters.getFocusMode();//保存默认对焦模式
+
+        InitPinnerOther(mCamera); //设置下拉列表
+
+        picWidth = Integer.parseInt((String.valueOf(supportedPictureSizes.get(0).width)));
+        picHeight = Integer.parseInt((String.valueOf(supportedPictureSizes.get(0).height)));
+        parameters.setPictureSize(picWidth, picHeight);
+        parameters.setPreviewSize(supportedPreviewSizes.get(0).width, supportedPreviewSizes.get(0).height);
+        parameters.setRotation(270); //default picture rotation
+
+        mCamera.setParameters(parameters);
+
+        mCamera.startPreview();
+        mCamera.setFaceDetectionListener(faceDetect);
+        try {
+            Thread.sleep(2000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        faceDetect.startFaceDetection(mCamera, faceDetect); //add face detection after preview
+        Log.d(TAG, "camera open finish");
+
+        // Add a listener to the Capture button
+        mCaptureButton = (Button) findViewById(R.id.button_capture);
+        mCaptureButton.setOnClickListener(new ButtonPart());
+
+        // Add a listener to the Switch button
+        mSwitchButton = (Button) findViewById(R.id.button_switch);
+        mSwitchButton.setOnClickListener(new ButtonPart());
+
+        // Add a listener to the video button
+        mVideoButton = (Button) findViewById(R.id.button_video);
+        mVideoButton.setOnClickListener(new ButtonPart());
+
+        Log.v(TAG, "onResume finish");
+    }
+
     protected void onDestroy() {
         // TODO Auto-generated method stub
         Log.v(TAG, "onDestroy");
@@ -162,7 +203,7 @@ public class MainActivity extends Activity {
     }
 
     private int FindFrontCamera() {
-        int cameraCount = 0;
+        int cameraCount;
         Camera.CameraInfo cameraInfo = new Camera.CameraInfo();
         cameraCount = Camera.getNumberOfCameras(); // get cameras number
 
@@ -253,11 +294,14 @@ public class MainActivity extends Activity {
         //flash
         spinner_flash=(Spinner)findViewById(R.id.flashMode);
         spinner_flash.setOnItemSelectedListener(new SpinnerSelectedListener());
+
+        Log.v(TAG, "InitPinnerOther end.");
     }
 
     //下拉列表事件监听---------------------------------------------
     class SpinnerSelectedListener implements AdapterView.OnItemSelectedListener {
         public void onItemSelected(AdapterView<?> arg0, View arg1, int arg2, long arg3) {
+
             Camera.Parameters parameters = mCamera.getParameters();
             switch (arg0.getId()) {
                 case R.id.resolution:
@@ -328,7 +372,7 @@ public class MainActivity extends Activity {
                 return;
             }
 
-            //faceDetect.stopFaceDetection(mCamera);
+            faceDetect.stopFaceDetection(mCamera);
             //mCamera.stopPreview();
 
             /*
@@ -365,7 +409,7 @@ public class MainActivity extends Activity {
             //See if need to enable or not
             mCaptureButton.setEnabled(true);
             mCamera.startPreview();
-            //faceDetect.startFaceDetection(mCamera);//add face detection after preview
+            faceDetect.startFaceDetection(mCamera,faceDetect);//add face detection after preview
         }
     };
 
@@ -383,7 +427,7 @@ public class MainActivity extends Activity {
                     break;
                 case R.id.button_switch:
                     if(mCamera != null){
-                        //faceDetect.stopFaceDetection(mCamera);
+                        faceDetect.stopFaceDetection(mCamera);
                         mCamera.stopPreview();//停掉原来摄像头的预览
                         mCamera.release();//释放资源
                         mCamera = null;//取消原来摄像头
@@ -399,7 +443,7 @@ public class MainActivity extends Activity {
                             mCamera = Camera.open(mCameraindex);
                             mCamera.setDisplayOrientation(270);
                             parameters = mCamera.getParameters();
-                            parameters.setRotation(270);
+                            parameters.setRotation(90);
                             mCamera.setParameters(parameters);
 
                             try {
@@ -420,7 +464,7 @@ public class MainActivity extends Activity {
                             mCamera = Camera.open(mCameraindex);
                             mCamera.setDisplayOrientation(270);
                             parameters = mCamera.getParameters();
-                            parameters.setRotation(180);
+                            parameters.setRotation(270);
                             mCamera.setParameters(parameters);
                             try {
                                 mCamera.setPreviewDisplay(previewCamera.getHolder());//通过surfaceview显示取景画面
@@ -434,7 +478,7 @@ public class MainActivity extends Activity {
                         Log.d(TAG, "Switch to "+mCameraindex);
                         InitPinnerOther(mCamera);
                         mCamera.startPreview(); //开始预览
-                        //faceDetect.startFaceDetection(mCamera); //add face detection after preview
+                        faceDetect.startFaceDetection(mCamera, faceDetect); //add face detection after preview
                     }
                     break;
                 case R.id.button_video:
@@ -453,13 +497,12 @@ public class MainActivity extends Activity {
                         //mCaptureButton.setVisibility(View.VISIBLE);
                         mSwitchButton.setVisibility(View.VISIBLE);
                         mVideoButton.setText("录影");
-                        mSurRecorder.stopRecording(mCamera);
+                        mSurRecorder.stopRecording();
                         try {
                             mCamera.reconnect();
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
-
                         isRecording = false;
                     }
                     break;
@@ -467,7 +510,6 @@ public class MainActivity extends Activity {
                     Toast.makeText(MainActivity.this, "camera open fail", Toast.LENGTH_LONG).show();
                     break;
             }
-
         }
     }
 
@@ -501,7 +543,7 @@ public class MainActivity extends Activity {
             }
 
             Log.d(TAG_TC,"Default focus mode:"+currentFocusMode);
-            params.setFocusMode(Camera.Parameters.FOCUS_MODE_MACRO);
+            params.setFocusMode(Camera.Parameters.FOCUS_MODE_AUTO);
             camera.setParameters(params);
 
             camera.autoFocus(new Camera.AutoFocusCallback() {
@@ -586,4 +628,23 @@ public class MainActivity extends Activity {
         }
         return true;
     }
+}
+
+class MainHandler extends Handler {
+    @Override
+    public void handleMessage(Message msg) {
+        // TODO Auto-generated method stub
+        switch (msg.what){
+            case EventUtil.UPDATE_FACE_RECT:
+                //Camera.Face[] faces = (Camera.Face[]) msg.obj;
+                //FaceView faceView = null;
+                //faceView.setFaces(faces);
+                break;
+            case EventUtil.CAMERA_HAS_STARTED_PREVIEW:
+                //faceDetect.startfe();
+                break;
+        }
+        super.handleMessage(msg);
+    }
+
 }

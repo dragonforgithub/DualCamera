@@ -128,16 +128,17 @@ class sMediaRecorder extends SurfaceView implements SurfaceHolder.Callback{
         //hour = 0;
         vtimer.setText(format(hour=0)+":"+format(minute=0)+":"+format(second=0));
 
-        if (mMediaRecorder == null)
+        if (mMediaRecorder == null){
             mMediaRecorder = new MediaRecorder();
-        else
+        } else{
             mMediaRecorder.reset();
+        }
 
         mMediaRecorder.setCamera(vCamera);
         //init recorder parameter
         mMediaRecorder.setVideoSource(android.media.MediaRecorder.VideoSource.CAMERA);
         mMediaRecorder.setAudioSource(android.media.MediaRecorder.AudioSource.MIC);
-        mMediaRecorder.setOutputFormat(android.media.MediaRecorder.OutputFormat.MPEG_4);
+        mMediaRecorder.setOutputFormat(android.media.MediaRecorder.OutputFormat.THREE_GPP);
         mMediaRecorder.setVideoEncoder(android.media.MediaRecorder.VideoEncoder.H264);
         mMediaRecorder.setAudioEncoder(android.media.MediaRecorder.AudioEncoder.AMR_NB);
         //mMediaRecorder.setProfile(CamcorderProfile.get(CamcorderProfile.QUALITY_720P));
@@ -156,7 +157,7 @@ class sMediaRecorder extends SurfaceView implements SurfaceHolder.Callback{
         }
 
         try {
-            mRecAudioFile = File.createTempFile("Vedio", ".mp4", mRecVedioPath);
+            mRecAudioFile = File.createTempFile("Vedio", ".3gp", mRecVedioPath);
         } catch (IOException e) {
             Log.e(TAG, "createTempFile error!");
             e.printStackTrace();
@@ -166,7 +167,6 @@ class sMediaRecorder extends SurfaceView implements SurfaceHolder.Callback{
         if(vCameraId == 1){
             mMediaRecorder.setOrientationHint(180);
         }
-
 
         try {
             vtimer.setVisibility(VISIBLE);
@@ -179,7 +179,7 @@ class sMediaRecorder extends SurfaceView implements SurfaceHolder.Callback{
         }
     }
 
-    public void stopRecording(Camera vCamera) {
+    public void stopRecording() {
         Log.i(TAG, "stop Recording:");
 
         try {

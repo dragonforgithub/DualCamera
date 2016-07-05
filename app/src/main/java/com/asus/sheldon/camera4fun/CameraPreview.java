@@ -12,18 +12,21 @@ import android.view.SurfaceView;
  */
 public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback {
     private SurfaceHolder mHolder=null;
-    private Camera mCamera=null;
+    private int CameraIndex=0;
+    public Camera mCamera=null;
 
-    public CameraPreview(Context context, Camera camera, SurfaceView sv) {
+    public CameraPreview(Context context, Camera camera, SurfaceView sv, int CI) {
         super(context);
 
         mCamera = camera;
+        CameraIndex = CI;
         mHolder = sv.getHolder();
         // Install a SurfaceHolder.Callback so we get notified when the
         // underlying surface is created and destroyed.
         if(mHolder != null){
             mHolder.addCallback(this); //添加回调
             // deprecated setting, but required on Android versions prior to 3.0
+            Log.e("Sheldon", "mHolder.setType:");
             mHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
         }
     }
@@ -31,13 +34,11 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
     public void surfaceCreated(SurfaceHolder holder) {
 
         Log.d("Sheldon", "surfaceCreated() is called");
-
         try {
-            // Open the Camera in preview mode
-            if(mCamera == null) {
-                mCamera = Camera.open(0);
+            if(mCamera != null && mHolder != null){
+                Log.d("Sheldon", "mCamera.setPreviewDisplay-mHolder");
+                mCamera.setPreviewDisplay(mHolder);
             }
-            mCamera.setPreviewDisplay(mHolder);
         } catch (IOException e) {
             Log.d("Sheldon", "Error setting camera preview: " + e.getMessage());
         }
@@ -49,11 +50,9 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
 
     public void surfaceDestroyed(SurfaceHolder holder) {
         if (mCamera != null) {
-            //mCamera.stopPreview();
             mCamera.release();
             mCamera = null;
         }
-
         Log.d("Sheldon", "surfaceDestroyed() is called");
     }
 }
