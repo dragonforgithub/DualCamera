@@ -36,6 +36,7 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.FrameLayout;
+import android.widget.LinearLayout;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -73,7 +74,7 @@ public class MainActivity extends Activity {
     private float oldDist = 1f;
 
     //face detection
-    public FaceDetection faceDetect = null;
+    public FaceDetection faceDetect;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -126,24 +127,21 @@ public class MainActivity extends Activity {
         }
 
         if (mCamera != null) {
+            faceDetect.stopFaceDetection(mCamera);
+            faceDetect=null;
             mCamera.stopPreview();
             mCamera.setPreviewCallback(null);
             mCamera.lock();
             mCamera.release();
             mCamera=null;
         }
-
-        mCameraSurPreview = null;
     }
 
     protected void onResume() {
         super.onResume();
         Log.v(TAG, "onResume");
         if(mCamera == null){
-
-            faceDetect = new FaceDetection(this,new MainHandler());
             mCamera = Camera.open(mCameraindex);
-
             if(mCamera == null) {
                 Log.e(TAG, "error : open camera " + mCameraindex);
                 return;
@@ -151,8 +149,10 @@ public class MainActivity extends Activity {
         }
 
         // Create Preview and video recorder
-        mCamera.setDisplayOrientation(270);
         previewCamera = (SurfaceView) this.findViewById(R.id.preView);
+
+        faceDetect = new FaceDetection(this, mCamera , (LinearLayout) findViewById(R.id.camera_linear));
+
         mCameraSurPreview = new CameraPreview(this, mCamera, previewCamera, mCameraindex);
         timerTV = (TextView) this.findViewById(R.id.videoTimer);
         timerTV.setVisibility(View.INVISIBLE);
@@ -167,12 +167,11 @@ public class MainActivity extends Activity {
         picHeight = Integer.parseInt((String.valueOf(supportedPictureSizes.get(0).height)));
         parameters.setPictureSize(picWidth, picHeight);
         parameters.setPreviewSize(supportedPreviewSizes.get(0).width, supportedPreviewSizes.get(0).height);
-        parameters.setRotation(270); //default picture rotation
-
+        parameters.setRotation(90); //default picture rotation
+        mCamera.setDisplayOrientation(90);
         mCamera.setParameters(parameters);
 
         mCamera.startPreview();
-        mCamera.setFaceDetectionListener(faceDetect);
         try {
             Thread.sleep(2000);
         } catch (InterruptedException e) {
@@ -317,32 +316,38 @@ public class MainActivity extends Activity {
                 case R.id.flashMode:
                     switch (arg2){
                         case 0:
+                            parameters.setFlashMode(parameters.FLASH_MODE_OFF);
+                            mCamera.setParameters(parameters);
                             parameters.setFlashMode(parameters.FLASH_MODE_AUTO);
+                            mCamera.setParameters(parameters);
                             currentFlashMode = parameters.FLASH_MODE_AUTO;
                             break;
                         case 1:
+                            parameters.setFlashMode(parameters.FLASH_MODE_OFF);
+                            mCamera.setParameters(parameters);
                             parameters.setFlashMode(parameters.FLASH_MODE_ON);
+                            mCamera.setParameters(parameters);
                             currentFlashMode = parameters.FLASH_MODE_ON;
                             break;
                         case 2:
                             parameters.setFlashMode(parameters.FLASH_MODE_OFF);
+                            mCamera.setParameters(parameters);
                             currentFlashMode = parameters.FLASH_MODE_OFF;
                             break;
                         case 3:
                             parameters.setFlashMode(parameters.FLASH_MODE_TORCH);
+                            mCamera.setParameters(parameters);
                             currentFlashMode = parameters.FLASH_MODE_TORCH;
                             break;
                         default:
                             Toast.makeText(MainActivity.this, "didn`t support!", Toast.LENGTH_LONG).show();
                             break;
                     }
-
                     break;
                 default:
                     Toast.makeText(MainActivity.this, "select error!", Toast.LENGTH_LONG).show();
                     break;
             }
-            mCamera.setParameters(parameters);
         }
 
         public void onNothingSelected(AdapterView<?> arg0) {
@@ -372,9 +377,6 @@ public class MainActivity extends Activity {
                 return;
             }
 
-            faceDetect.stopFaceDetection(mCamera);
-            //mCamera.stopPreview();
-
             /*
             try {
                 BufferedOutputStream bocameras = null;
@@ -393,7 +395,6 @@ public class MainActivity extends Activity {
                 e.printStackTrace();
             }
             */
-
             try {
                 if (data != null && pictureFile != null){
                     File rawOutput = new File(pictureFile);
@@ -408,8 +409,13 @@ public class MainActivity extends Activity {
             Toast.makeText(MainActivity.this,picWidth+"x"+picHeight+pictureFile,Toast.LENGTH_LONG).show();
             //See if need to enable or not
             mCaptureButton.setEnabled(true);
-            mCamera.startPreview();
-            faceDetect.startFaceDetection(mCamera,faceDetect);//add face detection after preview
+            mCamera.startPreview(); //开始预览
+            try {
+                Thread.sleep(2000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            faceDetect.startFaceDetection(mCamera, faceDetect); //add face detection after preview
         }
     };
 
@@ -441,9 +447,9 @@ public class MainActivity extends Activity {
                             }
 
                             mCamera = Camera.open(mCameraindex);
-                            mCamera.setDisplayOrientation(270);
+                            mCamera.setDisplayOrientation(90);
                             parameters = mCamera.getParameters();
-                            parameters.setRotation(90);
+                            parameters.setRotation(270);
                             mCamera.setParameters(parameters);
 
                             try {
@@ -462,9 +468,9 @@ public class MainActivity extends Activity {
                             }
 
                             mCamera = Camera.open(mCameraindex);
-                            mCamera.setDisplayOrientation(270);
+                            mCamera.setDisplayOrientation(90);
                             parameters = mCamera.getParameters();
-                            parameters.setRotation(270);
+                            parameters.setRotation(90);
                             mCamera.setParameters(parameters);
                             try {
                                 mCamera.setPreviewDisplay(previewCamera.getHolder());//通过surfaceview显示取景画面
@@ -478,6 +484,11 @@ public class MainActivity extends Activity {
                         Log.d(TAG, "Switch to "+mCameraindex);
                         InitPinnerOther(mCamera);
                         mCamera.startPreview(); //开始预览
+                        try {
+                            Thread.sleep(2000);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
                         faceDetect.startFaceDetection(mCamera, faceDetect); //add face detection after preview
                     }
                     break;
@@ -628,23 +639,4 @@ public class MainActivity extends Activity {
         }
         return true;
     }
-}
-
-class MainHandler extends Handler {
-    @Override
-    public void handleMessage(Message msg) {
-        // TODO Auto-generated method stub
-        switch (msg.what){
-            case EventUtil.UPDATE_FACE_RECT:
-                //Camera.Face[] faces = (Camera.Face[]) msg.obj;
-                //FaceView faceView = null;
-                //faceView.setFaces(faces);
-                break;
-            case EventUtil.CAMERA_HAS_STARTED_PREVIEW:
-                //faceDetect.startfe();
-                break;
-        }
-        super.handleMessage(msg);
-    }
-
 }
