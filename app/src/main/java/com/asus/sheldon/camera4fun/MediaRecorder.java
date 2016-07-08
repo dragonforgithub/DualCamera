@@ -144,7 +144,7 @@ class sMediaRecorder extends SurfaceView implements SurfaceHolder.Callback{
         //mMediaRecorder.setProfile(CamcorderProfile.get(CamcorderProfile.QUALITY_720P));
         mMediaRecorder.setVideoSize(1920,1080);
         mMediaRecorder.setVideoEncodingBitRate(100*1024*1024); //设置帧率调节清晰度
-        mMediaRecorder.setVideoFrameRate(20);
+        //mMediaRecorder.setVideoFrameRate(20);
         mMediaRecorder.setPreviewDisplay(mMediaHolder.getSurface());
 
 
@@ -194,7 +194,6 @@ class sMediaRecorder extends SurfaceView implements SurfaceHolder.Callback{
                 Log.e(TAG, "stop recorder error！");
                 e.printStackTrace();
             }
-
            // Toast.makeText(this, "", Toast.LENGTH_LONG).show();
         }
 }
