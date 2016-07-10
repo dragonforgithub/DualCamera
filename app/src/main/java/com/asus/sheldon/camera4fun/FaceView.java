@@ -19,27 +19,25 @@ import android.widget.ImageView;
 class FaceView extends ImageView {
     //ImageView:这个类继承ImageView，用来将Face[] 数据的rect取出来，变换后刷新到UI上
     private static final String TAG = "sheldon";
-    private Context mContext;
-    private Camera mCamera;
+
     private Paint mLinePaint;
     private Camera.Face[] mFaces;
     private Matrix mMatrix = new Matrix();
     private RectF mRect = new RectF();
     private Drawable mFaceIndicator = null;
+    private int mCamID=0;
 
-    public FaceView(Context context, Camera fCamera) {
-        super(context);
+    public FaceView(Context context, AttributeSet attrs) {
         // TODO Auto-generated constructor stub
-        mContext = context;
-        mCamera = fCamera;
+        super(context, attrs);
+
         mFaceIndicator = getResources().getDrawable(R.drawable.ic_face_find_1);
         initPaint();
     }
 
-
-    public void setFaces(Camera.Face[] faces){
+    public void setFaces(Camera.Face[] faces , int CI){
+        mCamID = CI;
         mFaces = faces;
-        draw(new Canvas());
         invalidate();
     }
 
@@ -51,58 +49,44 @@ class FaceView extends ImageView {
     @Override
     protected void onDraw(Canvas canvas) {
         // TODO Auto-generated method stub
-        super.onDraw(canvas);
-        Paint p = new Paint();
-        p.setColor(Color.RED);// 设置红色
-        canvas.drawRect(60, 60, 80, 80, p);// 正方形
 
+        //super.onDraw(canvas);
         if(mFaces == null || mFaces.length < 1){
             return;
         }
+
         boolean isMirror = false;
-        int Id = 1;
-        if(Id == Camera.CameraInfo.CAMERA_FACING_BACK){
+        if(mCamID == Camera.CameraInfo.CAMERA_FACING_BACK){
             isMirror = false; //后置Camera无需mirror
-        }else if(Id == Camera.CameraInfo.CAMERA_FACING_FRONT){
+            Log.e("FACE","isMirror: false");
+        }else if(mCamID == Camera.CameraInfo.CAMERA_FACING_FRONT){
             isMirror = true;  //前置Camera需要mirror
+            Log.e("FACE","isMirror: true");
         }
+
         Util.prepareMatrix(mMatrix, isMirror, 90, getWidth(), getHeight());
         canvas.save();
         mMatrix.postRotate(0); //Matrix.postRotate默认是顺时针
         canvas.rotate(-0);     //Canvas.rotate()默认是逆时针
         for(int i = 0; i< mFaces.length; i++){
+
             mRect.set(mFaces[i].rect);
             mMatrix.mapRect(mRect);
-            if (mFaces.length > 0){
-                Log.e("FACE","num:"+mFaces.length+
-                        "="+Math.round(mFaces[i].rect.centerX())+
-                        "-"+Math.round(mFaces[i].rect.centerY())+
-                        "-"+Math.round(mFaces[i].rect.right)+
-                        "-"+Math.round(mFaces[i].rect.bottom));
-            }
             /*
-            mFaceIndicator.setBounds(Math.round(mFaces[i].rect.centerX()),
-                                     Math.round(mFaces[i].rect.centerX()),
-                                     Math.round(mFaces[i].rect.right),
-                                     Math.round(mFaces[i].rect.bottom));
-                                     */
+            Log.e("FACE","num:"+mFaces.length+
+                    " = "+Math.round(mRect.left)+
+                    " - "+Math.round(mRect.top)+
+                    " - "+Math.round(mRect.right)+
+                    " - "+Math.round(mRect.bottom));
+            */
+            mFaceIndicator.setBounds(Math.round(mRect.left),
+                                     Math.round(mRect.top),
+                                     Math.round(mRect.right),
+                                     Math.round(mRect.bottom));
 
-
-
-            //mFaceIndicator.setBounds(100,100,100,100);
-            //mFaceIndicator.draw(canvas);
-
-
+            mFaceIndicator.draw(canvas);
 
             //canvas.drawRect(mRect, mLinePaint);
-            /*
-            canvas.drawRect(Math.round(mFaces[i].rect.centerX()),
-                            Math.round(mFaces[i].rect.centerX()),
-                            Math.round(mFaces[i].rect.right),
-                            Math.round(mFaces[i].rect.bottom),
-                             p);// 正方形
-                             */
-           // canvas.drawRect(60, 60, 80, 80, p);// 正方形
 
         }
         //canvas.restore();
@@ -111,9 +95,10 @@ class FaceView extends ImageView {
 
     private void initPaint(){
         mLinePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-//		int color = Color.rgb(0, 150, 255);
+        //mLinePaint.setColor(Color.RED);
+		//int color = Color.rgb(0, 150, 255);
         int color = Color.rgb(98, 212, 68);
-		mLinePaint.setColor(Color.RED);
+
         mLinePaint.setColor(color);
         mLinePaint.setStyle(Paint.Style.STROKE);
         mLinePaint.setStrokeWidth(5f);

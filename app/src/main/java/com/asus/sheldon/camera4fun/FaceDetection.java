@@ -24,13 +24,13 @@ public class FaceDetection implements Camera.FaceDetectionListener {
     private boolean isDetecting=false;
     private Context mContext;
     private FaceView faceView;
+    int mCamID=0;
 
-    public FaceDetection(Context c, Camera fCamera , LinearLayout mSV){
+    public FaceDetection(Context c, FaceView mFV){
         mContext = c;
-        faceView = new FaceView(c,fCamera);
-        faceView.setMinimumHeight(500);
-        faceView.setMinimumWidth(300);
-        mSV.addView(faceView);
+        faceView = mFV;
+        //faceView.setMinimumHeight(500);
+        //faceView.setMinimumWidth(300);
     }
 
     @Override
@@ -38,33 +38,31 @@ public class FaceDetection implements Camera.FaceDetectionListener {
         //Log.e(TAG,"faces.length :"+faces.length);
 
         if(faces != null){
-            //Message m = mHander.obtainMessage();
-            //m.what = EventUtil.UPDATE_FACE_RECT;
-            //m.obj = faces;
-            //m.sendToTarget();
-            faceView.invalidate();
-            faceView.setFaces(faces);
+
+            if (faces.length > 0){
+                /*
+                Log.e(  TAG, "face detected: "+ faces.length +
+                        "X: " + faces[0].rect.centerX() +
+                        "Y: " + faces[0].rect.centerY() );
+                */
+                faceView.setFaces(faces ,mCamID);
+                faceView.setVisibility(View.VISIBLE);
+            } else{
+                faceView.setVisibility(View.INVISIBLE);
+            }
+
         }
-        /*
-        if (faces.length > 0){
-            Log.e(  TAG, "face detected: "+ faces.length +
-                         " Face 1 Location X: " + faces[0].rect.centerX() +
-                         "Y: " + faces[0].rect.centerY() );
-        }
-        */
+
     }
 
-    public void startFaceDetection(Camera mCamera, FaceDetection fd){
+    public void startFaceDetection(Camera mCamera, FaceDetection fd , int mCI){
         // Try starting Face Detection
+        mCamID = mCI;
         Camera.Parameters params = mCamera.getParameters();
         // start face detection only *after* preview has started
         if (params.getMaxNumDetectedFaces() > 0){
             // camera supports face detection, so can start it:
             isDetecting=true;
-            //if(faceView != null){
-                //faceView.clearFaces();
-                //faceView.setVisibility(View.VISIBLE);
-            //}
             Log.v(TAG, "face number:"+params.getMaxNumDetectedFaces());
             mCamera.setFaceDetectionListener(fd);
             mCamera.startFaceDetection();
@@ -74,9 +72,9 @@ public class FaceDetection implements Camera.FaceDetectionListener {
     public void stopFaceDetection(Camera mCamera) {
         if (isDetecting==true) {
             Log.d(TAG, "stop FaceDetection:");
+            faceView.clearFaces();
             mCamera.setFaceDetectionListener(null);
             mCamera.stopFaceDetection();
-            //faceView.clearFaces();
             isDetecting=false;
         }
     }

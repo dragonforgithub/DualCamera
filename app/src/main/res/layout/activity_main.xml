@@ -23,6 +23,11 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent" />
 
+        <com.asus.sheldon.camera4fun.FaceView
+            android:id="@+id/face_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
         <Button
             android:id="@+id/button_capture"
             android:text="拍照"

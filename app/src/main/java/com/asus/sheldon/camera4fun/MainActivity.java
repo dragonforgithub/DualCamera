@@ -44,6 +44,7 @@ import android.widget.Toast;
 public class MainActivity extends Activity {
 
     SurfaceView previewCamera=null;
+    FaceView faceView=null;
     TextView timerTV=null;
     private Camera mCamera;
     private CameraPreview mCameraSurPreview = null;
@@ -150,8 +151,8 @@ public class MainActivity extends Activity {
 
         // Create Preview and video recorder
         previewCamera = (SurfaceView) this.findViewById(R.id.preView);
-
-        faceDetect = new FaceDetection(this, mCamera , (LinearLayout) findViewById(R.id.camera_linear));
+        faceView = (FaceView)findViewById(R.id.face_view);
+        faceDetect = new FaceDetection(this, faceView);
 
         mCameraSurPreview = new CameraPreview(this, mCamera, previewCamera, mCameraindex);
         timerTV = (TextView) this.findViewById(R.id.videoTimer);
@@ -172,12 +173,8 @@ public class MainActivity extends Activity {
         mCamera.setParameters(parameters);
 
         mCamera.startPreview();
-        try {
-            Thread.sleep(2000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        faceDetect.startFaceDetection(mCamera, faceDetect); //add face detection after preview
+        faceDetect.startFaceDetection(mCamera, faceDetect, mCameraID); //add face detection after preview
+
         Log.d(TAG, "camera open finish");
 
         // Add a listener to the Capture button
@@ -410,12 +407,7 @@ public class MainActivity extends Activity {
             //See if need to enable or not
             mCaptureButton.setEnabled(true);
             mCamera.startPreview(); //开始预览
-            try {
-                Thread.sleep(2000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            faceDetect.startFaceDetection(mCamera, faceDetect); //add face detection after preview
+            faceDetect.startFaceDetection(mCamera, faceDetect, mCameraID); //add face detection after preview
         }
     };
 
@@ -484,16 +476,12 @@ public class MainActivity extends Activity {
                         Log.d(TAG, "Switch to "+mCameraindex);
                         InitPinnerOther(mCamera);
                         mCamera.startPreview(); //开始预览
-                        try {
-                            Thread.sleep(2000);
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-                        faceDetect.startFaceDetection(mCamera, faceDetect); //add face detection after preview
+                        faceDetect.startFaceDetection(mCamera, faceDetect, mCameraID); //add face detection after preview
                     }
                     break;
                 case R.id.button_video:
                     if(isRecording == false){
+                        faceDetect.stopFaceDetection(mCamera);//stop face detection
                         spinner_res.setVisibility(View.INVISIBLE);
                         spinner_flash.setVisibility(View.INVISIBLE);
                         //mCaptureButton.setVisibility(View.INVISIBLE);
@@ -509,11 +497,11 @@ public class MainActivity extends Activity {
                         mSwitchButton.setVisibility(View.VISIBLE);
                         mVideoButton.setText("录影");
                         mSurRecorder.stopRecording();
-                        try {
-                            mCamera.reconnect();
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
+
+                        mCamera.stopPreview();
+                        mCamera.startPreview();
+                        faceDetect.startFaceDetection(mCamera, faceDetect, mCameraID);//restart face detection
+
                         isRecording = false;
                     }
                     break;
@@ -526,11 +514,11 @@ public class MainActivity extends Activity {
 
     //focuse and metering handle
     private static void handleFocusMetering(MotionEvent event, Camera camera) {
-        String TAG_TC = "Sheldon";
+        String TAG_TC = "SheldonTC";
         Camera.Parameters params = camera.getParameters(); //获得参数设置
         Camera.Size previewSize = params.getPreviewSize();
 
-        //触摸测光－－－－－－－－－－－－－－－－－－－－
+        //触摸测光----------------------------------
         Rect meteringRect = calculateTapArea(event.getX(), event.getY(), 1.5f, previewSize);
         if (params.getMaxNumMeteringAreas() > 0) {
             List<Camera.Area> meteringAreas = new ArrayList<>();
@@ -541,10 +529,10 @@ public class MainActivity extends Activity {
             Log.e(TAG_TC, "metering areas not supported");
         }
 
-        //触摸对焦－－－－－－－－－－－－－－－－－－－－－－－－－
+        //触摸对焦----------------------------------
         if(issupportFocuse){
             Rect focusRect = calculateTapArea(event.getX(), event.getY(), 1f, previewSize);
-            camera.cancelAutoFocus(); //去掉对焦完成后的回调函数
+            camera.cancelAutoFocus();   //去掉对焦完成后的回调函数
             if (params.getMaxNumFocusAreas() > 0) {
                 List<Camera.Area> focusAreas = new ArrayList<>();
                 focusAreas.add(new Camera.Area(focusRect, 800));
@@ -568,7 +556,7 @@ public class MainActivity extends Activity {
         }
     }
 
-    //触摸区域计算－－－－－－－－－－－－－－－－－－－－－－－－－－
+    //触摸区域计算----------------------------------
     private static int clamp(int x, int min, int max) {
         if (x > max) {
             return max;
@@ -578,6 +566,7 @@ public class MainActivity extends Activity {
         }
         return x;
     }
+
     private static Rect calculateTapArea(float x, float y, float coefficient, Camera.Size previewSize) {
         float AreaSize = 300;
         int areaSize = Float.valueOf(AreaSize * coefficient).intValue();
@@ -592,7 +581,7 @@ public class MainActivity extends Activity {
         return new Rect(Math.round(rectF.left), Math.round(rectF.top), Math.round(rectF.right), Math.round(rectF.bottom));
     }
 
-    //缩放功能－－－－－－－－－－－－－－－－－－－－－－－－－－－－－－－－－－－
+    //缩放功能----------------------------------
     private static float getFingerSpacing(MotionEvent event) {
         float x = event.getX(0) - event.getX(1);
         float y = event.getY(0) - event.getY(1);
