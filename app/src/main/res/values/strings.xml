@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Camera4Fun</string>
+    <string name="app_name">Cam4Fun</string>
     <string-array name="flashModeList">
         <item>AUTO</item>
         <item>ON</item>

@@ -123,9 +123,6 @@ class sMediaRecorder extends SurfaceView implements SurfaceHolder.Callback{
 
         vCamera.unlock(); //让media程序存取到相機
 
-        //second = 0;
-        //minute = 0;
-        //hour = 0;
         vtimer.setText(format(hour=0)+":"+format(minute=0)+":"+format(second=0));
 
         if (mMediaRecorder == null){
@@ -143,7 +140,7 @@ class sMediaRecorder extends SurfaceView implements SurfaceHolder.Callback{
         mMediaRecorder.setAudioEncoder(android.media.MediaRecorder.AudioEncoder.AMR_NB);
         //mMediaRecorder.setProfile(CamcorderProfile.get(CamcorderProfile.QUALITY_720P));
         mMediaRecorder.setVideoSize(1920,1080);
-        mMediaRecorder.setVideoEncodingBitRate(100*1024*1024); //设置帧率调节清晰度
+        mMediaRecorder.setVideoEncodingBitRate(5*1024*1024); //设置帧率调节清晰度
         //mMediaRecorder.setVideoFrameRate(20);
         mMediaRecorder.setPreviewDisplay(mMediaHolder.getSurface());
 

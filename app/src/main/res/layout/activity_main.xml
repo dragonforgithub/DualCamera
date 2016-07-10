@@ -16,10 +16,13 @@
         android:layout_width="match_parent"
         android:padding="0dip" >
 
-
-
         <SurfaceView
             android:id="@+id/preView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+        <com.asus.sheldon.camera4fun.FaceView
+            android:id="@+id/face_view"
             android:layout_width="match_parent"
             android:layout_height="match_parent" />
 
