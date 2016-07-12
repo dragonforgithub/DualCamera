@@ -1,8 +1,6 @@
 package com.asus.sheldon.camera4fun;
 
-import java.io.BufferedOutputStream;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
@@ -12,10 +10,6 @@ import java.util.List;
 
 import android.app.Activity;
 import android.content.pm.ActivityInfo;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.graphics.Color;
-import android.graphics.Matrix;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.hardware.Camera;
@@ -35,8 +29,6 @@ import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
-import android.widget.FrameLayout;
-import android.widget.LinearLayout;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -45,6 +37,7 @@ public class MainActivity extends Activity {
 
     SurfaceView previewCamera=null;
     FaceView faceView=null;
+    TouchView touchView=null;
     TextView timerTV=null;
     private Camera mCamera;
     private CameraPreview mCameraSurPreview = null;
@@ -74,8 +67,12 @@ public class MainActivity extends Activity {
     private static String currentFlashMode="auto";
     private float oldDist = 1f;
 
-    //face detection
+    //view detection
     public FaceDetection faceDetect;
+    private boolean focuseDone=false;
+    private boolean needMirror=false;
+
+    public Handler mHandler;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -83,7 +80,6 @@ public class MainActivity extends Activity {
         setContentView(R.layout.activity_main);
 
         //requestWindowFeature(Window.FEATURE_NO_TITLE);//no title
-
          this.getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);//设置全屏
          this.getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);//拍照过程屏幕一直处于高亮
         //设置手机屏幕朝向，一共有7种
@@ -153,7 +149,8 @@ public class MainActivity extends Activity {
         previewCamera = (SurfaceView) this.findViewById(R.id.preView);
         faceView = (FaceView)findViewById(R.id.face_view);
         faceDetect = new FaceDetection(this, faceView);
-
+        touchView = (TouchView)findViewById(R.id.touch_view);
+        touchView.setVisibility(View.INVISIBLE);
         mCameraSurPreview = new CameraPreview(this, mCamera, previewCamera, mCameraindex);
         timerTV = (TextView) this.findViewById(R.id.videoTimer);
         timerTV.setVisibility(View.INVISIBLE);
@@ -266,7 +263,6 @@ public class MainActivity extends Activity {
 
         parameters.setPictureFormat(256); //JPEG
         pCamera.setParameters(parameters);
-
 
         list_resolution.clear();
         for(int i=0;i<supportedPictureSizes.size();i++){
@@ -513,13 +509,13 @@ public class MainActivity extends Activity {
     }
 
     //focuse and metering handle
-    private static void handleFocusMetering(MotionEvent event, Camera camera) {
+    private void handleFocusMetering(MotionEvent event, Camera camera) {
         String TAG_TC = "SheldonTC";
         Camera.Parameters params = camera.getParameters(); //获得参数设置
         Camera.Size previewSize = params.getPreviewSize();
 
         //触摸测光----------------------------------
-        Rect meteringRect = calculateTapArea(event.getX(), event.getY(), 1.5f, previewSize);
+        Rect meteringRect = calculateTapArea(event.getRawX(), event.getRawY(), 1.5f, previewSize);
         if (params.getMaxNumMeteringAreas() > 0) {
             List<Camera.Area> meteringAreas = new ArrayList<>();
             meteringAreas.add(new Camera.Area(meteringRect, 400));
@@ -531,8 +527,14 @@ public class MainActivity extends Activity {
 
         //触摸对焦----------------------------------
         if(issupportFocuse){
-            Rect focusRect = calculateTapArea(event.getX(), event.getY(), 1f, previewSize);
             camera.cancelAutoFocus();   //去掉对焦完成后的回调函数
+            params.setFocusMode(Camera.Parameters.FOCUS_MODE_AUTO);
+
+            final Rect focusRect = calculateTapArea(event.getRawX(), event.getRawY(), 1f, previewSize);
+
+            touchView.setVisibility(View.VISIBLE);
+            touchView.setFocus(focusRect, focuseDone, needMirror);
+
             if (params.getMaxNumFocusAreas() > 0) {
                 List<Camera.Area> focusAreas = new ArrayList<>();
                 focusAreas.add(new Camera.Area(focusRect, 800));
@@ -541,13 +543,18 @@ public class MainActivity extends Activity {
                 Log.e(TAG_TC,"focus areas not supported");
             }
 
-            Log.d(TAG_TC,"Default focus mode:"+currentFocusMode);
-            params.setFocusMode(Camera.Parameters.FOCUS_MODE_AUTO);
             camera.setParameters(params);
+            Log.d(TAG_TC,"Default focus mode:"+currentFocusMode);
 
             camera.autoFocus(new Camera.AutoFocusCallback() {
                 @Override
                 public void onAutoFocus(boolean success, Camera camera) {
+                        Log.d(TAG,"onAutoFocus : "+success);
+                        focuseDone = success;
+                        touchView.setFocus(focusRect, focuseDone, needMirror);
+                        //mHandler.sendEmptyMessageDelayed(HandleMsg.MSG_START_PREVIEW, 1000);
+                        touchView.setVisibility(View.INVISIBLE);
+                        focuseDone = false;
                     Camera.Parameters params = camera.getParameters();
                     params.setFocusMode(currentFocusMode);
                     camera.setParameters(params);
@@ -556,7 +563,7 @@ public class MainActivity extends Activity {
         }
     }
 
-    //触摸区域计算----------------------------------
+    //触摸区域范围限定及计算----------------------------------
     private static int clamp(int x, int min, int max) {
         if (x > max) {
             return max;
@@ -568,17 +575,21 @@ public class MainActivity extends Activity {
     }
 
     private static Rect calculateTapArea(float x, float y, float coefficient, Camera.Size previewSize) {
+
         float AreaSize = 300;
         int areaSize = Float.valueOf(AreaSize * coefficient).intValue();
-        int centerX = (int) (x / previewSize.width - 1000);
-        int centerY = (int) (y / previewSize.height - 1000);
+
+        int centerX = (int)((x / previewSize.height) * 2000 - 1000);
+        int centerY = (int)((y / previewSize.width) * 2000 - 1000);
 
         int left = clamp(centerX - areaSize / 2, -1000, 1000);
+        int right = clamp(centerX + areaSize, -1000, 1000);
         int top = clamp(centerY - areaSize / 2, -1000, 1000);
+        int bottom = clamp(centerY + areaSize, -1000, 1000);
 
-        RectF rectF = new RectF(left, top, left + areaSize, top + areaSize);
-
-        return new Rect(Math.round(rectF.left), Math.round(rectF.top), Math.round(rectF.right), Math.round(rectF.bottom));
+        RectF mTapRectF = new RectF(left, top, right, bottom);
+        return new Rect(Math.round(mTapRectF.left), Math.round(mTapRectF.top),
+                        Math.round(mTapRectF.right), Math.round(mTapRectF.bottom));
     }
 
     //缩放功能----------------------------------
@@ -629,3 +640,4 @@ public class MainActivity extends Activity {
         return true;
     }
 }
+

@@ -17,7 +17,6 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
 
     public CameraPreview(Context context, Camera camera, SurfaceView sv, int CI) {
         super(context);
-
         mCamera = camera;
         CameraIndex = CI;
         mHolder = sv.getHolder();
@@ -32,7 +31,6 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
     }
 
     public void surfaceCreated(SurfaceHolder holder) {
-
         Log.d("Sheldon", "surfaceCreated() is called");
         try {
             if(mCamera != null && mHolder != null){
