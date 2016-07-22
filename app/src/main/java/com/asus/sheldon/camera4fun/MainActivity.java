@@ -9,7 +9,9 @@ import java.util.Date;
 import java.util.List;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.pm.ActivityInfo;
+import android.graphics.Color;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.hardware.Camera;
@@ -21,6 +23,7 @@ import android.os.Message;
 import android.util.Log;
 import android.util.Size;
 import android.view.MotionEvent;
+import android.view.OrientationEventListener;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
@@ -29,6 +32,7 @@ import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -42,17 +46,20 @@ public class MainActivity extends Activity {
     private Camera mCamera;
     private CameraPreview mCameraSurPreview = null;
     private sMediaRecorder mSurRecorder = null;
-    private Button mCaptureButton = null;
-    private Button mSwitchButton = null;
-    private Button mVideoButton = null;
+    private ImageButton mCaptureButton = null;
+    private ImageButton mSwitchButton = null;
+    private ImageButton mVideoButton = null;
+    private MyOrientationDetector mOrientationListener=null;
+
     private String TAG = "Sheldon";
     private int mCameraID = 0;
     private int mCameraindex = 0;
     private boolean isRecording=false;
     private static boolean issupportFocuse=false;
 
-    private int picWidth;
-    private int picHeight;
+    private int picWidth=640;
+    private int picHeight=480;
+    private int mOrientation=0;
 
     private List<Camera.Size> supportedPreviewSizes;
     private List<Camera.Size> supportedPictureSizes;
@@ -72,7 +79,6 @@ public class MainActivity extends Activity {
     private boolean focuseDone=false;
     private boolean needMirror=false;
 
-    public Handler mHandler;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -90,7 +96,8 @@ public class MainActivity extends Activity {
         //SCREEN_ORIENTATION_NOSENSOR： 忽略物理感应器——即显示方向与物理感应器无关，不管用户如何旋转设备显示方向都不会随着改变("unspecified"设置除外)
         //SCREEN_ORIENTATION_UNSPECIFIED： 未指定，此为默认值，由Android系统自己选择适当的方向，选择策略视具体设备的配置情况而定，因此不同的设备会有不同的方向选择
         //SCREEN_ORIENTATION_USER： 用户当前的首选方向
-         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_NOSENSOR);
+        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_NOSENSOR);
+        mOrientationListener = new MyOrientationDetector(this);
 
         try {
             Log.d(TAG, "mCamera open id=" + 0);
@@ -118,7 +125,7 @@ public class MainActivity extends Activity {
         Log.v(TAG, "onPause");
         // Because the Camera object is a shared resource, it's very
         // important to release it when the activity is paused.
-
+        mOrientationListener.disable();
         if(mSurRecorder != null){
             mSurRecorder.stopRecording();
         }
@@ -145,6 +152,7 @@ public class MainActivity extends Activity {
             }
         }
 
+        mOrientationListener.enable();
         // Create Preview and video recorder
         previewCamera = (SurfaceView) this.findViewById(R.id.preView);
         faceView = (FaceView)findViewById(R.id.face_view);
@@ -156,34 +164,41 @@ public class MainActivity extends Activity {
         timerTV.setVisibility(View.INVISIBLE);
         mSurRecorder = new sMediaRecorder(this, previewCamera, timerTV);
 
-        Camera.Parameters parameters = mCamera.getParameters();
-        currentFocusMode = parameters.getFocusMode();//保存默认对焦模式
-
         InitPinnerOther(mCamera); //设置下拉列表
 
+        Camera.Parameters parameters = mCamera.getParameters();
         picWidth = Integer.parseInt((String.valueOf(supportedPictureSizes.get(0).width)));
         picHeight = Integer.parseInt((String.valueOf(supportedPictureSizes.get(0).height)));
         parameters.setPictureSize(picWidth, picHeight);
         parameters.setPreviewSize(supportedPreviewSizes.get(0).width, supportedPreviewSizes.get(0).height);
         parameters.setRotation(90); //default picture rotation
         mCamera.setDisplayOrientation(90);
+
         mCamera.setParameters(parameters);
 
         mCamera.startPreview();
         faceDetect.startFaceDetection(mCamera, faceDetect, mCameraID); //add face detection after preview
-
+        //preview 800ms後,模擬點擊對焦調光
+        new Handler().postDelayed(new Runnable(){
+            public void run() {
+                //execute the task
+                Camera.Parameters params = mCamera.getParameters();
+                Camera.Size previewSize = params.getPreviewSize();
+                setMouseClick(previewSize.height/2, previewSize.width/2);
+            }
+        }, 800);
         Log.d(TAG, "camera open finish");
 
         // Add a listener to the Capture button
-        mCaptureButton = (Button) findViewById(R.id.button_capture);
+        mCaptureButton = (ImageButton) findViewById(R.id.button_capture);
         mCaptureButton.setOnClickListener(new ButtonPart());
 
         // Add a listener to the Switch button
-        mSwitchButton = (Button) findViewById(R.id.button_switch);
+        mSwitchButton = (ImageButton) findViewById(R.id.button_switch);
         mSwitchButton.setOnClickListener(new ButtonPart());
 
         // Add a listener to the video button
-        mVideoButton = (Button) findViewById(R.id.button_video);
+        mVideoButton = (ImageButton) findViewById(R.id.button_video);
         mVideoButton.setOnClickListener(new ButtonPart());
 
         Log.v(TAG, "onResume finish");
@@ -192,6 +207,7 @@ public class MainActivity extends Activity {
     protected void onDestroy() {
         // TODO Auto-generated method stub
         Log.v(TAG, "onDestroy");
+        mOrientationListener.disable();
         super.onDestroy();
     }
 
@@ -243,7 +259,7 @@ public class MainActivity extends Activity {
             parameters.setFlashMode(parameters.FLASH_MODE_OFF);
         }else {
             for(int i=0;i<supportedFlashMode.size();i++){
-                Log.e(TAG, "supportedFlashMode : "+supportedFlashMode.get(i).toString());
+                Log.i(TAG, "supportedFlashMode : "+supportedFlashMode.get(i).toString());
             }
             parameters.setFlashMode(currentFlashMode);
         }
@@ -253,10 +269,9 @@ public class MainActivity extends Activity {
             Log.e(TAG, "supportedFlashMode : Null");
         }else {
             for(int i=0;i<supportedFocuseMode.size();i++){
-                Log.e(TAG, "supportedFocuseMode : "+supportedFocuseMode.get(i).toString());
+                Log.i(TAG, "supportedFocuseMode : "+supportedFocuseMode.get(i).toString());
                 if(supportedFocuseMode.get(i).equals("auto")){
                     issupportFocuse=true;
-                    parameters.setFocusMode(parameters.FOCUS_MODE_AUTO);
                 }
             }
         }
@@ -402,6 +417,8 @@ public class MainActivity extends Activity {
             Toast.makeText(MainActivity.this,picWidth+"x"+picHeight+pictureFile,Toast.LENGTH_LONG).show();
             //See if need to enable or not
             mCaptureButton.setEnabled(true);
+            mCaptureButton.setBackgroundColor(Color.TRANSPARENT);
+            //mCaptureButton.setImageDrawable(getResources().getDrawable(R.drawable.btn_shutter_default));
             mCamera.startPreview(); //开始预览
             faceDetect.startFaceDetection(mCamera, faceDetect, mCameraID); //add face detection after preview
         }
@@ -416,6 +433,8 @@ public class MainActivity extends Activity {
             switch (v.getId()) {
                 case R.id.button_capture:
                     Log.d(TAG,"Take pic-flash mode:"+mCamera.getParameters().getFlashMode());
+                    //mCaptureButton.setImageDrawable(getResources().getDrawable(R.drawable.btn_shutter_pressed));
+                    mCaptureButton.setBackgroundColor(Color.rgb(0x00,0xBF,0xFF)); //深天藍
                     mCaptureButton.setEnabled(false);
                     mCamera.takePicture(null, null, mPictureCallback);
                     break;
@@ -477,21 +496,17 @@ public class MainActivity extends Activity {
                     break;
                 case R.id.button_video:
                     if(isRecording == false){
+                        mVideoButton.setBackgroundColor(Color.RED);
                         faceDetect.stopFaceDetection(mCamera);//stop face detection
                         spinner_res.setVisibility(View.INVISIBLE);
                         spinner_flash.setVisibility(View.INVISIBLE);
-                        //mCaptureButton.setVisibility(View.INVISIBLE);
-                        mSwitchButton.setVisibility(View.INVISIBLE);
-                        mVideoButton.setText("停止");
                         mSurRecorder.startRecording(mCamera, mCameraID);
                         isRecording = true;
                     }
                     else{
+                        mVideoButton.setBackgroundColor(Color.TRANSPARENT);
                         spinner_res.setVisibility(View.VISIBLE);
                         spinner_flash.setVisibility(View.VISIBLE);
-                        //mCaptureButton.setVisibility(View.VISIBLE);
-                        mSwitchButton.setVisibility(View.VISIBLE);
-                        mVideoButton.setText("录影");
                         mSurRecorder.stopRecording();
 
                         mCamera.stopPreview();
@@ -506,6 +521,49 @@ public class MainActivity extends Activity {
                     break;
             }
         }
+    }
+
+    public class MyOrientationDetector extends OrientationEventListener {
+        public MyOrientationDetector(Context context) {
+            super(context);
+        }
+
+        @Override
+        public void onOrientationChanged(int orientation) {
+            Log.i("MyOrientationDetector ", "onOrientationChanged:" + orientation);
+            if (orientation == OrientationEventListener.ORIENTATION_UNKNOWN) {
+                return;  //手机平放时，检测不到有效的角度
+            }
+            //只检测是否有四个角度的改变
+            if (orientation > 315 || orientation <= 45) { //0度
+                mOrientation = 0;
+                mSwitchButton.setRotation(0);
+            } else if (orientation > 45 && orientation <= 135) { //90度
+                mOrientation = 90;
+                mSwitchButton.setRotation(270);
+            } else if (orientation > 135 && orientation <= 225) { //180度
+                mOrientation = 180;
+                mSwitchButton.setRotation(180);
+            } else if (orientation > 225 && orientation <= 315) { //270度
+                mOrientation = 270;
+                mSwitchButton.setRotation(90);
+            } else {
+                return;
+            }
+        }
+    }
+
+    //simulateClick:模擬屏幕點擊開camera時自動對焦和調光,作用於Activity
+    public void setMouseClick(int x, int y){
+        Log.e(TAG, "setMouseClick : "+x+","+y);
+        MotionEvent evenDownt = MotionEvent.obtain(System.currentTimeMillis(), System.currentTimeMillis() + 100,
+                MotionEvent.ACTION_DOWN, x, y, 0);
+        dispatchTouchEvent(evenDownt);
+        MotionEvent eventUp = MotionEvent.obtain(System.currentTimeMillis(), System.currentTimeMillis() + 100,
+                MotionEvent.ACTION_UP, x, y, 0);
+        dispatchTouchEvent(eventUp);
+        evenDownt.recycle();
+        eventUp.recycle();
     }
 
     //focuse and metering handle
@@ -578,7 +636,7 @@ public class MainActivity extends Activity {
 
         float AreaSize = 300;
         int areaSize = Float.valueOf(AreaSize * coefficient).intValue();
-
+        //ps:x-previewSize.height, y-previewSize.width
         int centerX = (int)((x / previewSize.height) * 2000 - 1000);
         int centerY = (int)((y / previewSize.width) * 2000 - 1000);
 
@@ -618,6 +676,7 @@ public class MainActivity extends Activity {
 
     //获取触摸事件----------------------------------
     public boolean onTouchEvent(MotionEvent event) {
+        Log.d(TAG, "event.getPointerCount() = "+event.getPointerCount());
         if (event.getPointerCount() == 1) {
             handleFocusMetering(event, mCamera);
         } else {
