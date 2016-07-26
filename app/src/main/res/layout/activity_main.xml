@@ -61,17 +61,17 @@
 
         <Spinner
             android:id="@+id/resolution"
-            android:layout_width="107dp"
-            android:layout_height="42dp"
-            android:padding="5dip"
+            android:layout_width="133dp"
+            android:layout_height="40dp"
+            android:padding="1dip"
             android:layout_gravity="left|top" />
 
         <Spinner
             android:id="@+id/flashMode"
-            android:layout_width="93dp"
-            android:layout_height="37dp"
+            android:layout_width="92dp"
+            android:layout_height="40dp"
             android:entries="@array/flashModeList"
-            android:padding="5dip"
+            android:padding="1dip"
             android:layout_gravity="right|top" />
 
         <TextView
@@ -82,7 +82,25 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textColor="#7c0fa4"
+            android:layout_gravity="center_horizontal|top" />
+
+        <ImageView
+            android:id="@+id/id_show_camera_iv"
+            android:gravity="center"
+            android:layout_width="80dp"
+            android:layout_height="60dp"
             android:layout_gravity="right|bottom" />
+
+        <GridView android:id="@+id/grid"
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent"
+            android:verticalSpacing="35px"
+            android:horizontalSpacing="5px"
+            android:numColumns="auto_fit"
+            android:columnWidth="100dp"
+            android:stretchMode="columnWidth"
+            android:gravity="center"  />
+
     </FrameLayout>
 
 </LinearLayout>

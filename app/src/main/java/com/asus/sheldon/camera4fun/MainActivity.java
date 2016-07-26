@@ -1,20 +1,32 @@
 package com.asus.sheldon.camera4fun;
 
+import java.io.BufferedOutputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import android.app.Activity;
+import android.content.ContentResolver;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.ActivityInfo;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.graphics.Matrix;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.hardware.Camera;
+import android.media.ThumbnailUtils;
+import android.net.Uri;
 import android.nfc.Tag;
 import android.os.Bundle;
 import android.os.Environment;
@@ -32,17 +44,21 @@ import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.GridView;
 import android.widget.ImageButton;
+import android.widget.ImageView;
+import android.widget.SimpleAdapter;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
 public class MainActivity extends Activity {
 
-    SurfaceView previewCamera=null;
-    FaceView faceView=null;
-    TouchView touchView=null;
-    TextView timerTV=null;
+    public static final String ACTION_MEDIA_SCANNER_SCAN_DIR = "android.intent.action.MEDIA_SCANNER_SCAN_DIR";
+    public SurfaceView previewCamera=null;
+    public FaceView faceView=null;
+    public TouchView touchView=null;
+    public TextView timerTV=null;
     private Camera mCamera;
     private CameraPreview mCameraSurPreview = null;
     private sMediaRecorder mSurRecorder = null;
@@ -57,9 +73,9 @@ public class MainActivity extends Activity {
     private boolean isRecording=false;
     private static boolean issupportFocuse=false;
 
+    public int mOrientation=0;
     private int picWidth=640;
     private int picHeight=480;
-    private int mOrientation=0;
 
     private List<Camera.Size> supportedPreviewSizes;
     private List<Camera.Size> supportedPictureSizes;
@@ -71,13 +87,19 @@ public class MainActivity extends Activity {
     private Spinner spinner_flash;
 
     private static String currentFocusMode="auto";
-    private static String currentFlashMode="auto";
+    private static String currentFlashMode="off";
     private float oldDist = 1f;
 
     //view detection
     public FaceDetection faceDetect;
+    public ArrayList fileList;
     private boolean focuseDone=false;
     private boolean needMirror=false;
+
+    private Bitmap mThumbImage;
+    private ImageView showCameraIv;
+    private File mPictureFile;
+
 
 
     @Override
@@ -96,8 +118,42 @@ public class MainActivity extends Activity {
         //SCREEN_ORIENTATION_NOSENSOR： 忽略物理感应器——即显示方向与物理感应器无关，不管用户如何旋转设备显示方向都不会随着改变("unspecified"设置除外)
         //SCREEN_ORIENTATION_UNSPECIFIED： 未指定，此为默认值，由Android系统自己选择适当的方向，选择策略视具体设备的配置情况而定，因此不同的设备会有不同的方向选择
         //SCREEN_ORIENTATION_USER： 用户当前的首选方向
-        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_NOSENSOR);
+            //setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_NOSENSOR);
+
         mOrientationListener = new MyOrientationDetector(this);
+
+        // Add a listener to the Capture button
+        mCaptureButton = (ImageButton) findViewById(R.id.button_capture);
+        mCaptureButton.setOnClickListener(new ButtonPart());
+
+        // Add a listener to the Switch button
+        mSwitchButton = (ImageButton) findViewById(R.id.button_switch);
+        mSwitchButton.setOnClickListener(new ButtonPart());
+
+        // Add a listener to the video button
+        mVideoButton = (ImageButton) findViewById(R.id.button_video);
+        mVideoButton.setOnClickListener(new ButtonPart());
+
+        // Add ImageView
+        showCameraIv = (ImageView)this.findViewById(R.id.id_show_camera_iv);
+        showCameraIv.setOnClickListener(new View.OnClickListener(){
+            @Override
+            public void onClick(View v) {
+                processShowPicture(mPictureFile.getPath());
+                Log.e(TAG,"show Me!");
+            }
+        });
+
+
+        //get the mobile Pictures directory
+        mPictureFile = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
+        processShowPicture(mPictureFile.getPath());
+        //Iterator<String> it = fileList.iterator();
+
+        Log.e(TAG,"getPath.= "+mPictureFile.getPath());
+
+        showCameraIv.setImageBitmap(mThumbImage);
+
 
         try {
             Log.d(TAG, "mCamera open id=" + 0);
@@ -118,6 +174,53 @@ public class MainActivity extends Activity {
             finish();
             return;
         }
+    }
+
+    /*处理图片跳转进入预览界面*/
+    private void processShowPicture(String pictureFile){
+            //获取SD卡上所有图片
+        File file = new File(pictureFile);
+        File[] files = file.listFiles();
+
+            for(int i = 0; i<files.length ; i++)
+            {
+                if(files[i].isFile())
+                {
+                    String filename = files[i].getName();
+                    //获取bmp,jpg,png格式的图片
+                    if(filename.endsWith(".jpg")||filename.endsWith(".png")||filename.endsWith(".bmp"))
+                    {
+
+                        String filePath = files[i].getAbsolutePath();
+                        Log.e(TAG,"files["+i+"].getAbsolutePath() = "+filePath);
+                        //fileList.add((Object)files[i].getAbsoluteFile());
+                        //暫時實施效果
+                        mThumbImage = ThumbnailUtils.extractThumbnail(BitmapFactory.decodeFile(filePath), 320, 240);
+                        break;
+                    }
+                }else if(files[i].isDirectory()){
+                    pictureFile = files[i].getAbsolutePath();
+                    processShowPicture(pictureFile);
+                }
+            }
+    }
+
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (resultCode == RESULT_OK) {
+            Uri uri = data.getData();
+            Log.e("uri", uri.toString());
+            ContentResolver cr = this.getContentResolver();
+            try {
+                Bitmap bitmap = BitmapFactory.decodeStream(cr.openInputStream(uri));
+                //ImageView imageView = (ImageView) findViewById(R.id.iv01);
+                /* 将Bitmap设定到ImageView */
+                showCameraIv.setImageBitmap(bitmap);
+                Log.e(TAG,"setImageBitmap!");
+            } catch (FileNotFoundException e) {
+                Log.e("Exception", e.getMessage(),e);
+            }
+        }
+        super.onActivityResult(requestCode, resultCode, data);
     }
 
     protected void onPause() {
@@ -187,19 +290,6 @@ public class MainActivity extends Activity {
                 setMouseClick(previewSize.height/2, previewSize.width/2);
             }
         }, 800);
-        Log.d(TAG, "camera open finish");
-
-        // Add a listener to the Capture button
-        mCaptureButton = (ImageButton) findViewById(R.id.button_capture);
-        mCaptureButton.setOnClickListener(new ButtonPart());
-
-        // Add a listener to the Switch button
-        mSwitchButton = (ImageButton) findViewById(R.id.button_switch);
-        mSwitchButton.setOnClickListener(new ButtonPart());
-
-        // Add a listener to the video button
-        mVideoButton = (ImageButton) findViewById(R.id.button_video);
-        mVideoButton.setOnClickListener(new ButtonPart());
 
         Log.v(TAG, "onResume finish");
     }
@@ -326,9 +416,7 @@ public class MainActivity extends Activity {
                         case 0:
                             parameters.setFlashMode(parameters.FLASH_MODE_OFF);
                             mCamera.setParameters(parameters);
-                            parameters.setFlashMode(parameters.FLASH_MODE_AUTO);
-                            mCamera.setParameters(parameters);
-                            currentFlashMode = parameters.FLASH_MODE_AUTO;
+                            currentFlashMode = parameters.FLASH_MODE_OFF;
                             break;
                         case 1:
                             parameters.setFlashMode(parameters.FLASH_MODE_OFF);
@@ -340,7 +428,9 @@ public class MainActivity extends Activity {
                         case 2:
                             parameters.setFlashMode(parameters.FLASH_MODE_OFF);
                             mCamera.setParameters(parameters);
-                            currentFlashMode = parameters.FLASH_MODE_OFF;
+                            parameters.setFlashMode(parameters.FLASH_MODE_AUTO);
+                            mCamera.setParameters(parameters);
+                            currentFlashMode = parameters.FLASH_MODE_AUTO;
                             break;
                         case 3:
                             parameters.setFlashMode(parameters.FLASH_MODE_TORCH);
@@ -367,32 +457,32 @@ public class MainActivity extends Activity {
 
         String picPatch;
         //get the mobile Pictures directory
-        File picDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
+        mPictureFile = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
         //get the current time
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-
-        picPatch = picDir.getPath() + File.separator + "IMAGE_" + timeStamp + ".jpg";
+        picPatch = mPictureFile.getPath() + File.separator + "IMAGE_" + timeStamp + ".jpg";
         Log.e(TAG, "picPatch:" + picPatch);
         return picPatch;
     }
 
     Camera.PictureCallback mPictureCallback = new Camera.PictureCallback() {
         public void onPictureTaken(byte[] data, Camera camera) {
-            //save the picture to sdcard
-            String pictureFile = getOutputMediaFile();
-            if (pictureFile == null) {
-                Log.d(TAG, "Error creating media file, check storage permissions: ");
-                return;
+            //set the picture save path
+            String savePath;
+            savePath = getOutputMediaFile();
+            if (savePath == null) {
+                Log.e(TAG, "Error creating media file, check storage permissions: ");
+                Toast.makeText(MainActivity.this,"creat media file fail",Toast.LENGTH_LONG).show();
             }
 
-            /*
+            /* //so slowly
             try {
                 BufferedOutputStream bocameras = null;
                 Bitmap bitmap = BitmapFactory.decodeByteArray(data, 0, data.length);
                 Matrix matrix = new Matrix();
                 matrix.setRotate(90,(float) bitmap.getWidth(), (float) bitmap.getHeight());
                 bitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
-                bos = new BufferedOutputStream(new FileOutputStream(pictureFile));
+                BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(mPictureFile));
                 bitmap.compress(Bitmap.CompressFormat.JPEG, 100, bos);
                 bos.flush();
                 bos.close();
@@ -402,10 +492,11 @@ public class MainActivity extends Activity {
             } catch (IOException e) {
                 e.printStackTrace();
             }
-            */
+             */
+
             try {
-                if (data != null && pictureFile != null){
-                    File rawOutput = new File(pictureFile);
+                if (data != null && savePath != null){
+                    File rawOutput = new File(savePath);
                     FileOutputStream outStream = new FileOutputStream(rawOutput);
                     outStream.write(data);
                     outStream.close();
@@ -414,7 +505,10 @@ public class MainActivity extends Activity {
                 Log.e(TAG,e.getMessage());
             }
 
-            Toast.makeText(MainActivity.this,picWidth+"x"+picHeight+pictureFile,Toast.LENGTH_LONG).show();
+            mThumbImage = ThumbnailUtils.extractThumbnail(BitmapFactory.decodeFile(savePath), 320, 240);
+            showCameraIv.setImageBitmap(mThumbImage);
+
+            Toast.makeText(MainActivity.this,picWidth+"x"+picHeight+savePath,Toast.LENGTH_LONG).show();
             //See if need to enable or not
             mCaptureButton.setEnabled(true);
             mCaptureButton.setBackgroundColor(Color.TRANSPARENT);
@@ -496,6 +590,7 @@ public class MainActivity extends Activity {
                     break;
                 case R.id.button_video:
                     if(isRecording == false){
+                        mSwitchButton.setVisibility(View.INVISIBLE);
                         mVideoButton.setBackgroundColor(Color.RED);
                         faceDetect.stopFaceDetection(mCamera);//stop face detection
                         spinner_res.setVisibility(View.INVISIBLE);
@@ -512,6 +607,7 @@ public class MainActivity extends Activity {
                         mCamera.stopPreview();
                         mCamera.startPreview();
                         faceDetect.startFaceDetection(mCamera, faceDetect, mCameraID);//restart face detection
+                        mSwitchButton.setVisibility(View.VISIBLE);
 
                         isRecording = false;
                     }
