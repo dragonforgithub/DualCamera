@@ -18,6 +18,7 @@ import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
+import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
@@ -32,6 +33,7 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
+import android.provider.MediaStore;
 import android.util.Log;
 import android.util.Size;
 import android.view.MotionEvent;
@@ -92,13 +94,14 @@ public class MainActivity extends Activity {
 
     //view detection
     public FaceDetection faceDetect;
-    public ArrayList fileList;
     private boolean focuseDone=false;
     private boolean needMirror=false;
 
     private Bitmap mThumbImage;
     private ImageView showCameraIv;
+
     private File mPictureFile;
+    private String mSavePhotoFile;
 
 
 
@@ -139,120 +142,105 @@ public class MainActivity extends Activity {
         showCameraIv.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View v) {
-                processShowPicture(mPictureFile.getPath());
-                Log.e(TAG,"show Me!");
+              /*開啟相簿相片集，須由startActivityForResult且帶入requestCode進行呼叫，原因
+                為點選相片後返回程式呼叫onActivityResult*/
+                Intent intent = new Intent(Intent.ACTION_PICK,
+                        android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+                startActivityForResult(intent, EventUtil.REQUEST_SELECT_PHOTO);
             }
         });
-
 
         //get the mobile Pictures directory
         mPictureFile = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
         processShowPicture(mPictureFile.getPath());
-        //Iterator<String> it = fileList.iterator();
 
-        Log.e(TAG,"getPath.= "+mPictureFile.getPath());
-
-        showCameraIv.setImageBitmap(mThumbImage);
-
-
-        try {
-            Log.d(TAG, "mCamera open id=" + 0);
-
-            if (mCameraID == 0) {
-                mCameraindex = FindBackCamera();
-                if (mCameraindex == -1)
-                    return;
-            } else if (mCameraID == 1) {
-                mCameraindex = FindFrontCamera();
-                if (mCameraindex == -1)
-                    return;
-            }
-        } catch (Exception e) {
-            // TODO: handle exception
-            Log.e(TAG,e.getMessage());
-            Toast.makeText(this, "camera open fail", Toast.LENGTH_LONG).show();
-            finish();
-            return;
+        if (mCameraID == 0) {
+            mCameraindex = FindBackCamera();
+            if (mCameraindex == -1)
+                return;
+        } else if (mCameraID == 1) {
+            mCameraindex = FindFrontCamera();
+            if (mCameraindex == -1)
+                return;
         }
+        Log.d(TAG, "default open camera" + mCameraindex);
     }
 
-    /*处理图片跳转进入预览界面*/
-    private void processShowPicture(String pictureFile){
-            //获取SD卡上所有图片
+    /*掃描目錄下的圖片*/
+    private void processShowPicture(String pictureFile) {
+
         File file = new File(pictureFile);
         File[] files = file.listFiles();
 
-            for(int i = 0; i<files.length ; i++)
-            {
-                if(files[i].isFile())
-                {
-                    String filename = files[i].getName();
-                    //获取bmp,jpg,png格式的图片
-                    if(filename.endsWith(".jpg")||filename.endsWith(".png")||filename.endsWith(".bmp"))
-                    {
+        for (int i = 0; i < files.length; i++) {
+            if (files[i].isFile()) {
+                String filename = files[i].getName();
+                //获取bmp,jpg,png格式的图片
+                if (filename.endsWith(".jpg") || filename.endsWith(".png") || filename.endsWith(".bmp")) {
 
-                        String filePath = files[i].getAbsolutePath();
-                        Log.e(TAG,"files["+i+"].getAbsolutePath() = "+filePath);
-                        //fileList.add((Object)files[i].getAbsoluteFile());
-                        //暫時實施效果
-                        mThumbImage = ThumbnailUtils.extractThumbnail(BitmapFactory.decodeFile(filePath), 320, 240);
-                        break;
-                    }
-                }else if(files[i].isDirectory()){
-                    pictureFile = files[i].getAbsolutePath();
-                    processShowPicture(pictureFile);
+                    String filePath = files[i].getAbsolutePath();
+                    Log.i(TAG, "files[" + i + "].getAbsolutePath() = " + filePath);
+                    //記錄並顯示第一張到縮略圖
+                    mThumbImage = ThumbnailUtils.extractThumbnail(BitmapFactory.decodeFile(filePath), 320, 240);
+                    showCameraIv.setImageBitmap(mThumbImage);
+                    mSavePhotoFile = filePath;
+                    break;
                 }
+            } else if (files[i].isDirectory()) {
+                pictureFile = files[i].getAbsolutePath();
+                processShowPicture(pictureFile);
             }
+        }
     }
 
+    @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if (resultCode == RESULT_OK) {
-            Uri uri = data.getData();
-            Log.e("uri", uri.toString());
-            ContentResolver cr = this.getContentResolver();
-            try {
-                Bitmap bitmap = BitmapFactory.decodeStream(cr.openInputStream(uri));
-                //ImageView imageView = (ImageView) findViewById(R.id.iv01);
-                /* 将Bitmap设定到ImageView */
-                showCameraIv.setImageBitmap(bitmap);
-                Log.e(TAG,"setImageBitmap!");
-            } catch (FileNotFoundException e) {
-                Log.e("Exception", e.getMessage(),e);
-            }
-        }
         super.onActivityResult(requestCode, resultCode, data);
-    }
-
-    protected void onPause() {
-        super.onPause();
-        Log.v(TAG, "onPause");
-        // Because the Camera object is a shared resource, it's very
-        // important to release it when the activity is paused.
-        mOrientationListener.disable();
-        if(mSurRecorder != null){
-            mSurRecorder.stopRecording();
-        }
-
-        if (mCamera != null) {
-            faceDetect.stopFaceDetection(mCamera);
-            faceDetect=null;
-            mCamera.stopPreview();
-            mCamera.setPreviewCallback(null);
-            mCamera.lock();
-            mCamera.release();
-            mCamera=null;
+        Log.e(TAG,"resultCode : "+resultCode);
+        Log.e(TAG,"requestCode : "+requestCode);
+        if (resultCode == Activity.RESULT_OK) {
+            switch (requestCode) {
+                case EventUtil.REQUEST_SELECT_PHOTO: //得到並顯示圖片
+                    Uri selectImageUri  = data.getData();
+                    String[] filePathColumn = new String[]{MediaStore.Images.Media.DATA};//要查询的列
+                    Cursor cursor = getContentResolver().query(selectImageUri,filePathColumn,null,null,null);
+                    String pirPath = null;
+                    while(cursor.moveToNext()){
+                        pirPath = cursor.getString(cursor.getColumnIndex(filePathColumn[0]));//所选择的图片路径
+                    }
+                    cursor.close();
+                    Log.e(TAG,"pirPath="+pirPath);
+                    break;
+                case EventUtil.REQUEST_CROP_PHOTO:
+                    Log.e(TAG,"REQUEST_CROP_PHOTO : ");
+                    Bundle extras = data.getExtras();
+                    if (extras != null) {
+                        Bitmap photo = extras.getParcelable("data");
+                        Log.e(TAG,"photo : "+photo);
+                        //把图片显示到ImgeView
+                        mThumbImage = ThumbnailUtils.extractThumbnail(BitmapFactory.decodeFile(mSavePhotoFile), 320, 240);
+                        showCameraIv.setImageBitmap(photo);
+                        //把图片加入图库
+                        galleryAddPic(mSavePhotoFile);
+                    }
+                    break;
+            }
         }
     }
 
     protected void onResume() {
         super.onResume();
         Log.v(TAG, "onResume");
-        if(mCamera == null){
-            mCamera = Camera.open(mCameraindex);
-            if(mCamera == null) {
-                Log.e(TAG, "error : open camera " + mCameraindex);
-                return;
+        try {
+            if(mCamera == null){
+                mCamera = Camera.open(mCameraindex);
+                Log.i(TAG, "open camera :" + mCameraindex);
             }
+        } catch (Exception e) {
+            // TODO: handle exception
+            Toast.makeText(this, "camera open fail", Toast.LENGTH_LONG).show();
+            Log.e(TAG,e.getMessage());
+            return;
         }
 
         mOrientationListener.enable();
@@ -294,11 +282,49 @@ public class MainActivity extends Activity {
         Log.v(TAG, "onResume finish");
     }
 
+    protected void onPause() {
+        super.onPause();
+        Log.v(TAG, "onPause");
+        // Because the Camera object is a shared resource, it's very
+        // important to release it when the activity is paused.
+        if(mOrientationListener != null){
+            mOrientationListener.disable();
+        }
+
+        if(mSurRecorder != null && isRecording == true){
+            mSurRecorder.stopRecording();
+        }
+
+        if (mCamera != null) {
+            faceDetect.stopFaceDetection(mCamera);
+            mCamera.stopPreview();
+            mCamera.setPreviewCallback(null);
+            mCamera.lock();
+            mCamera.release();
+            mCamera=null;
+        }
+    }
+
     protected void onDestroy() {
         // TODO Auto-generated method stub
+        super.onDestroy();
         Log.v(TAG, "onDestroy");
         mOrientationListener.disable();
-        super.onDestroy();
+
+        if(mSurRecorder != null && isRecording == true){
+            mSurRecorder.stopRecording();
+        }
+
+        if (mCamera != null) {
+            faceDetect.stopFaceDetection(mCamera);
+            faceDetect=null;
+            mCamera.stopPreview();
+            mCamera.setPreviewCallback(null);
+            mCamera.lock();
+            mCamera.release();
+            mCamera=null;
+        }
+        finish();
     }
 
     private int FindFrontCamera() {
@@ -374,7 +400,6 @@ public class MainActivity extends Activity {
             list_resolution.add(String.valueOf(supportedPictureSizes.get(i).width)+"*"+
                     String.valueOf(supportedPictureSizes.get(i).height));
         }
-
         //设置下拉列表的风格
         //resolution
         adapter_res=new ArrayAdapter<String>(this, android.R.layout.simple_spinner_dropdown_item,list_resolution);
@@ -460,10 +485,19 @@ public class MainActivity extends Activity {
         mPictureFile = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
         //get the current time
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-        picPatch = mPictureFile.getPath() + File.separator + "IMAGE_" + timeStamp + ".jpg";
+        picPatch = mPictureFile.getPath() + File.separator + "IMG_" + timeStamp + ".jpg";
         Log.e(TAG, "picPatch:" + picPatch);
         return picPatch;
     }
+    /* 触发系统的media scanner来把图片加入Media Provider's database */
+    private void galleryAddPic(String mCurrentPhotoPath) {
+        Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
+        File f = new File(mCurrentPhotoPath);
+        Uri contentUri = Uri.fromFile(f);
+        mediaScanIntent.setData(contentUri);  //设置URI
+        this.sendBroadcast(mediaScanIntent);  //发送广播
+    }
+
 
     Camera.PictureCallback mPictureCallback = new Camera.PictureCallback() {
         public void onPictureTaken(byte[] data, Camera camera) {
@@ -505,6 +539,7 @@ public class MainActivity extends Activity {
                 Log.e(TAG,e.getMessage());
             }
 
+            galleryAddPic(savePath);
             mThumbImage = ThumbnailUtils.extractThumbnail(BitmapFactory.decodeFile(savePath), 320, 240);
             showCameraIv.setImageBitmap(mThumbImage);
 

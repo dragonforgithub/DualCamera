@@ -1,10 +1,12 @@
 package com.asus.sheldon.camera4fun;
 
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.PixelFormat;
 import android.hardware.Camera;
 import android.media.CamcorderProfile;
 import android.media.MediaRecorder;
+import android.net.Uri;
 import android.os.Environment;
 import android.os.Handler;
 import android.util.Log;
@@ -147,9 +149,9 @@ class sMediaRecorder extends SurfaceView implements SurfaceHolder.Callback{
 
 
         //设置缓存路径
-        mRecVedioPath = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + "/video/temp/");
+        mRecVedioPath = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + "/video/FunVideo/");
         Log.d(TAG, "set recorder path:"
-                + Environment.getExternalStorageDirectory().getAbsolutePath() + "/video/temp/");
+                + Environment.getExternalStorageDirectory().getAbsolutePath() + "/video/FunVideo/");
         if (!mRecVedioPath.exists()) {
             mRecVedioPath.mkdirs();
         }
@@ -181,6 +183,7 @@ class sMediaRecorder extends SurfaceView implements SurfaceHolder.Callback{
         Log.i(TAG, "stop Recording:");
 
         try {
+                galleryAddVideo(mRecAudioFile.getAbsolutePath()); //顯示到圖庫
                 vtimer.setVisibility(INVISIBLE);
                 if(mMediaRecorder != null){
                     handler.removeCallbacks(task);
@@ -192,6 +195,14 @@ class sMediaRecorder extends SurfaceView implements SurfaceHolder.Callback{
                 Log.e(TAG, "stop recorder error！");
                 e.printStackTrace();
             }
-           // Toast.makeText(this, "", Toast.LENGTH_LONG).show();
-        }
+    }
+
+    /* 触发系统的media scanner来把視頻加入Media Provider's database */
+    public void galleryAddVideo(String mCurrentVideoPath) {
+        Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
+        File f = new File(mCurrentVideoPath);
+        Uri contentUri = Uri.fromFile(f);
+        mediaScanIntent.setData(contentUri);  //设置URI
+        mContext.sendBroadcast(mediaScanIntent);  //发送广播
+    }
 }
