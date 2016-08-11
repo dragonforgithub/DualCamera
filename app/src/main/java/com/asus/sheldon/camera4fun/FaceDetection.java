@@ -35,11 +35,9 @@ public class FaceDetection implements Camera.FaceDetectionListener {
 
     @Override
     public void onFaceDetection(Camera.Face[] faces, Camera camera) {
-        //Log.e(TAG,"faces.length :"+faces.length);
-
         if(faces != null){
-
             if (faces.length > 0){
+                Log.i(TAG,"faces.length :"+faces.length);
                 /*
                 Log.e(  TAG, "face detected: "+ faces.length +
                         "X: " + faces[0].rect.centerX() +

@@ -47,7 +47,7 @@
             android:scaleType="fitXY"
             android:layout_gravity="center_horizontal|bottom"
             android:background="#00000000"
-            android:src="@drawable/capture1" />
+            android:src="@drawable/capture2" />
 
         <ImageButton
             android:id="@+id/button_video"
@@ -60,14 +60,14 @@
 
         <Spinner
             android:id="@+id/resolution"
-            android:layout_width="133dp"
+            android:layout_width="120dp"
             android:layout_height="40dp"
             android:padding="1dip"
             android:layout_gravity="left|top" />
 
         <Spinner
             android:id="@+id/flashMode"
-            android:layout_width="92dp"
+            android:layout_width="70dp"
             android:layout_height="40dp"
             android:entries="@array/flashModeList"
             android:padding="1dip"

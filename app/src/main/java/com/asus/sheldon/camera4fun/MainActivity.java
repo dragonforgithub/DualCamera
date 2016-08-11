@@ -23,6 +23,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.Matrix;
+import android.graphics.Path;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.hardware.Camera;
@@ -152,6 +153,7 @@ public class MainActivity extends Activity {
 
         //get the mobile Pictures directory
         mPictureFile = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
+        Log.i(TAG,"mPictureFile path="+mPictureFile.getPath());
         processShowPicture(mPictureFile.getPath());
 
         if (mCameraID == 0) {
@@ -170,26 +172,32 @@ public class MainActivity extends Activity {
     private void processShowPicture(String pictureFile) {
 
         File file = new File(pictureFile);
-        File[] files = file.listFiles();
+        if(file.exists()){
+            File[] files = file.listFiles();
+            Log.i(TAG, "files.length =" + files.length);
 
-        for (int i = 0; i < files.length; i++) {
-            if (files[i].isFile()) {
-                String filename = files[i].getName();
-                //获取bmp,jpg,png格式的图片
-                if (filename.endsWith(".jpg") || filename.endsWith(".png") || filename.endsWith(".bmp")) {
+            for (int i = files.length-1; i >= 0; i--) {
+                if (files[i].isFile()) {
+                    String filename = files[i].getName();
+                    //获取bmp,jpg,png格式的图片
+                    if (filename.endsWith(".jpg") || filename.endsWith(".png") || filename.endsWith(".bmp")) {
 
-                    String filePath = files[i].getAbsolutePath();
-                    Log.i(TAG, "files[" + i + "].getAbsolutePath() = " + filePath);
-                    //記錄並顯示第一張到縮略圖
-                    mThumbImage = ThumbnailUtils.extractThumbnail(BitmapFactory.decodeFile(filePath), 320, 240);
-                    showCameraIv.setImageBitmap(mThumbImage);
-                    mSavePhotoFile = filePath;
-                    break;
+                        String filePath = files[i].getAbsolutePath();
+                        Log.i(TAG, "files[" + i + "].getAbsolutePath() = " + filePath);
+                        //記錄並顯示最新一張到縮略圖
+                        mThumbImage = ThumbnailUtils.extractThumbnail(BitmapFactory.decodeFile(filePath), 320, 240);
+                        showCameraIv.setImageBitmap(mThumbImage);
+                        mSavePhotoFile = filePath;
+                        break;
+                    }
+                } else if (files[i].isDirectory()) {
+                    pictureFile = files[i].getAbsolutePath();
+                    processShowPicture(pictureFile);
                 }
-            } else if (files[i].isDirectory()) {
-                pictureFile = files[i].getAbsolutePath();
-                processShowPicture(pictureFile);
             }
+        }else {
+            file.mkdirs();
+            Log.e(TAG,pictureFile+":not exist,then mkdirs.");
         }
     }
 
@@ -202,27 +210,10 @@ public class MainActivity extends Activity {
             switch (requestCode) {
                 case EventUtil.REQUEST_SELECT_PHOTO: //得到並顯示圖片
                     Uri selectImageUri  = data.getData();
-                    String[] filePathColumn = new String[]{MediaStore.Images.Media.DATA};//要查询的列
-                    Cursor cursor = getContentResolver().query(selectImageUri,filePathColumn,null,null,null);
-                    String pirPath = null;
-                    while(cursor.moveToNext()){
-                        pirPath = cursor.getString(cursor.getColumnIndex(filePathColumn[0]));//所选择的图片路径
-                    }
-                    cursor.close();
-                    Log.e(TAG,"pirPath="+pirPath);
+                    Log.e(TAG,"pirPath="+selectImageUri);
                     break;
                 case EventUtil.REQUEST_CROP_PHOTO:
-                    Log.e(TAG,"REQUEST_CROP_PHOTO : ");
-                    Bundle extras = data.getExtras();
-                    if (extras != null) {
-                        Bitmap photo = extras.getParcelable("data");
-                        Log.e(TAG,"photo : "+photo);
-                        //把图片显示到ImgeView
-                        mThumbImage = ThumbnailUtils.extractThumbnail(BitmapFactory.decodeFile(mSavePhotoFile), 320, 240);
-                        showCameraIv.setImageBitmap(photo);
-                        //把图片加入图库
-                        galleryAddPic(mSavePhotoFile);
-                    }
+                    Log.i(TAG,"REQUEST_CROP_PHOTO : ");
                     break;
             }
         }
@@ -309,8 +300,9 @@ public class MainActivity extends Activity {
         // TODO Auto-generated method stub
         super.onDestroy();
         Log.v(TAG, "onDestroy");
-        mOrientationListener.disable();
-
+        if(mOrientationListener != null){
+            mOrientationListener.disable();
+        }
         if(mSurRecorder != null && isRecording == true){
             mSurRecorder.stopRecording();
         }
@@ -539,10 +531,10 @@ public class MainActivity extends Activity {
                 Log.e(TAG,e.getMessage());
             }
 
-            galleryAddPic(savePath);
+
             mThumbImage = ThumbnailUtils.extractThumbnail(BitmapFactory.decodeFile(savePath), 320, 240);
             showCameraIv.setImageBitmap(mThumbImage);
-
+            galleryAddPic(savePath);
             Toast.makeText(MainActivity.this,picWidth+"x"+picHeight+savePath,Toast.LENGTH_LONG).show();
             //See if need to enable or not
             mCaptureButton.setEnabled(true);
@@ -563,7 +555,8 @@ public class MainActivity extends Activity {
                 case R.id.button_capture:
                     Log.d(TAG,"Take pic-flash mode:"+mCamera.getParameters().getFlashMode());
                     //mCaptureButton.setImageDrawable(getResources().getDrawable(R.drawable.btn_shutter_pressed));
-                    mCaptureButton.setBackgroundColor(Color.rgb(0x00,0xBF,0xFF)); //深天藍
+                    //mCaptureButton.setBackgroundColor(Color.rgb(0x00,0xBF,0xFF)); //深天藍
+                    mCaptureButton.setBackgroundColor(Color.WHITE);
                     mCaptureButton.setEnabled(false);
                     mCamera.takePicture(null, null, mPictureCallback);
                     break;
