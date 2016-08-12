@@ -104,8 +104,6 @@ public class MainActivity extends Activity {
     private File mPictureFile;
     private String mSavePhotoFile;
 
-
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -259,14 +257,14 @@ public class MainActivity extends Activity {
         mCamera.setParameters(parameters);
 
         mCamera.startPreview();
-        faceDetect.startFaceDetection(mCamera, faceDetect, mCameraID); //add face detection after preview
-        //preview 800ms後,模擬點擊對焦調光
+        //preview 800ms後,模擬點擊對焦調光,开启脸部识别
         new Handler().postDelayed(new Runnable(){
             public void run() {
                 //execute the task
                 Camera.Parameters params = mCamera.getParameters();
                 Camera.Size previewSize = params.getPreviewSize();
                 setMouseClick(previewSize.height/2, previewSize.width/2);
+                faceDetect.startFaceDetection(mCamera, faceDetect, mCameraID); //add face detection after preview
             }
         }, 800);
 
@@ -350,9 +348,7 @@ public class MainActivity extends Activity {
     //初始化分辨率下拉列表
     public void InitPinnerOther(Camera pCamera){
 
-        ArrayAdapter<String> adapter_res;
         Camera.Parameters parameters = pCamera.getParameters();
-
         //get current preview size list
         supportedPreviewSizes = parameters.getSupportedPreviewSizes();
         //get current picture size list
@@ -394,8 +390,9 @@ public class MainActivity extends Activity {
         }
         //设置下拉列表的风格
         //resolution
+        ArrayAdapter<String> adapter_res;
         adapter_res=new ArrayAdapter<String>(this, android.R.layout.simple_spinner_dropdown_item,list_resolution);
-        adapter_res.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        //adapter_res.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
 
         //将adapter 添加到spinner中
         spinner_res=(Spinner)findViewById(R.id.resolution);
@@ -423,6 +420,7 @@ public class MainActivity extends Activity {
                         picWidth=Integer.parseInt((String.valueOf(supportedPictureSizes.get(arg2).width)));
                         picHeight=Integer.parseInt((String.valueOf(supportedPictureSizes.get(arg2).height)));
                         parameters.setPictureSize(picWidth, picHeight);
+                        mCamera.setParameters(parameters);
                         Log.i(TAG, "pic:"+arg2+
                                 "set Pic_width:"+picWidth+
                                 "set Pic_height:"+picHeight);
@@ -566,6 +564,7 @@ public class MainActivity extends Activity {
                         mCamera.stopPreview();//停掉原来摄像头的预览
                         mCamera.release();//释放资源
                         mCamera = null;//取消原来摄像头
+                        touchView.setVisibility(View.INVISIBLE);
                     }
 
                     if(mCameraID == 0){
