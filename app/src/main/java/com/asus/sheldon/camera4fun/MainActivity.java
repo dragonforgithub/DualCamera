@@ -88,7 +88,9 @@ public class MainActivity extends Activity {
 
     private Spinner spinner_res;
     private Spinner spinner_flash;
+    private Spinner spinner_specific;
 
+    private int specificNo=0;
     private static String currentFocusMode="auto";
     private static String currentFlashMode="off";
     private float oldDist = 1f;
@@ -406,6 +408,10 @@ public class MainActivity extends Activity {
         spinner_flash=(Spinner)findViewById(R.id.flashMode);
         spinner_flash.setOnItemSelectedListener(new SpinnerSelectedListener());
 
+        //specific
+        spinner_specific=(Spinner)findViewById(R.id.Specific);
+        spinner_specific.setOnItemSelectedListener(new SpinnerSelectedListener());
+
         Log.v(TAG, "InitPinnerOther end.");
     }
 
@@ -456,6 +462,20 @@ public class MainActivity extends Activity {
                             Toast.makeText(MainActivity.this, "didn`t support!", Toast.LENGTH_LONG).show();
                             break;
                     }
+                    break;
+                case R.id.Specific:
+                    switch (arg2){
+                        case 0:
+                            specificNo = 0;
+                            break;
+                        case 1:
+                            specificNo = 1;
+                            break;
+                        default:
+                            Toast.makeText(MainActivity.this, "didn`t support!", Toast.LENGTH_LONG).show();
+                            break;
+                    }
+                    faceDetect.updateFaceStatus(specificNo);
                     break;
                 default:
                     Toast.makeText(MainActivity.this, "select error!", Toast.LENGTH_LONG).show();

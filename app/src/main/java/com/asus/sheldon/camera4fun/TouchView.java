@@ -54,13 +54,13 @@ public class TouchView extends ImageView{
 
         if(mfocusDone == false){
             Log.i(TAG,"mfocusDone: false");
-            /*
+
             Log.e(TAG,"position:"+
                     " = "+Math.round(mfocusRect.left)+
                     " - "+Math.round(mfocusRect.top)+
                     " - "+Math.round(mfocusRect.right)+
                     " - "+Math.round(mfocusRect.bottom));
-            */
+
 
             //get the circle position and draw
             canvas.drawCircle(mfocusRect.left+(mfocusRect.right-mfocusRect.left)/2,

@@ -6,4 +6,9 @@
         <item>AUTO</item>
         <item>TORCH</item>
     </string-array>
+
+    <string-array name="specific">
+        <item>OFF</item>
+        <item>FIRE</item>
+    </string-array>
 </resources>

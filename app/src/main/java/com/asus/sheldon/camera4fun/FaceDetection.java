@@ -25,6 +25,7 @@ public class FaceDetection implements Camera.FaceDetectionListener {
     private Context mContext;
     private FaceView faceView;
     int mCamID=0;
+    int specificNo=0;
 
     public FaceDetection(Context c, FaceView mFV){
         mContext = c;
@@ -43,7 +44,7 @@ public class FaceDetection implements Camera.FaceDetectionListener {
                         "X: " + faces[0].rect.centerX() +
                         "Y: " + faces[0].rect.centerY() );
                 */
-                faceView.setFaces(faces ,mCamID);
+                faceView.setFaces(faces , mCamID, specificNo);
                 faceView.setVisibility(View.VISIBLE);
             } else{
                 faceView.setVisibility(View.INVISIBLE);
@@ -51,6 +52,10 @@ public class FaceDetection implements Camera.FaceDetectionListener {
 
         }
 
+    }
+
+    public void updateFaceStatus(int mSpecificNo){
+        specificNo = mSpecificNo;
     }
 
     public void startFaceDetection(Camera mCamera, FaceDetection fd , int mCI){
