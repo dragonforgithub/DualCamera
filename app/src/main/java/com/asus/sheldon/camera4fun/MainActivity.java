@@ -347,6 +347,24 @@ public class MainActivity extends Activity {
         return -1;
     }
 
+    private int FindBackCamera_2() {
+        boolean findFirst;
+        Camera.CameraInfo cameraInfo = new Camera.CameraInfo();
+        findFirst=false; //init
+        for (int camIdx = 0; camIdx < Camera.getNumberOfCameras(); camIdx++) {
+            Camera.getCameraInfo(camIdx, cameraInfo); // get camerainfo
+            if (cameraInfo.facing == Camera.CameraInfo.CAMERA_FACING_BACK) {
+                if(findFirst == true){
+                    Log.e(TAG,"FindBackCamera_2 index =  "+camIdx);
+                    return camIdx;
+                }else {
+                    findFirst=true;
+                }
+            }
+        }
+        return -1;
+    }
+
     //初始化分辨率下拉列表
     public void InitPinnerOther(Camera pCamera){
 
@@ -585,6 +603,8 @@ public class MainActivity extends Activity {
                         mCamera.release();//释放资源
                         mCamera = null;//取消原来摄像头
                         touchView.setVisibility(View.INVISIBLE);
+                        mCaptureButton.setEnabled(true);
+                        mCaptureButton.setBackgroundColor(Color.TRANSPARENT);
                     }
 
                     if(mCameraID == 0){
@@ -609,10 +629,20 @@ public class MainActivity extends Activity {
                             mCameraID = 1;
 
                     }else if(mCameraID == 1){
-                            mCameraindex = FindBackCamera();
+
+                            mCameraindex = FindBackCamera_2();
                             if (mCameraindex == -1){
-                                Toast.makeText(MainActivity.this, "No rear camera!", Toast.LENGTH_LONG).show();
-                                return;
+                                Toast.makeText(MainActivity.this, "No rear camera_2!", Toast.LENGTH_LONG).show();
+
+                                mCameraindex = FindBackCamera();
+                                if (mCameraindex == -1){
+                                    Toast.makeText(MainActivity.this, "No rear camera!", Toast.LENGTH_LONG).show();
+                                    return;
+                                }else {
+                                    mCameraID = 0;
+                                }
+                            }else {
+                                mCameraID = 2;
                             }
 
                             mCamera = Camera.open(mCameraindex);
@@ -626,8 +656,30 @@ public class MainActivity extends Activity {
                                 e.printStackTrace();
                                 Log.e(TAG, "setPreviewDisplay error!");
                             }
-                            mCameraID = 0;
+
+                    }else if(mCameraID == 2){
+                        mCameraindex = FindBackCamera();
+                        if (mCameraindex == -1){
+                            Toast.makeText(MainActivity.this, "No rear camera!", Toast.LENGTH_LONG).show();
+                            return;
+                        }
+
+                        mCameraID = 0;
+
+                        mCamera = Camera.open(mCameraindex);
+                        mCamera.setDisplayOrientation(90);
+                        parameters = mCamera.getParameters();
+                        parameters.setRotation(90);
+                        mCamera.setParameters(parameters);
+                        try {
+                            mCamera.setPreviewDisplay(previewCamera.getHolder());//通过surfaceview显示取景画面
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                            Log.e(TAG, "setPreviewDisplay error!");
+                        }
+
                     }
+
                     if(mCamera != null){
                         Log.d(TAG, "Switch to "+mCameraindex);
                         InitPinnerOther(mCamera);
