@@ -295,9 +295,22 @@ public class MainActivity extends Activity {
         if(mOrientationListener != null){
             mOrientationListener.disable();
         }
-       // if(mSurRecorder != null && isRecording == true){
+        //if(mSurRecorder != null && isRecording == true){
          //   mSurRecorder.stopRecording();
-       // }
+        //}
+        if(mCamera != null){
+
+            mCamera.stopPreview();
+            mCamera.release();
+            mCamera=null;
+        }
+
+        if(mCamera_sub != null){
+
+            mCamera_sub.stopPreview();
+            mCamera_sub.release();
+            mCamera_sub=null;
+        }
 
         System.exit(0);
     }
@@ -483,7 +496,7 @@ public class MainActivity extends Activity {
                         new Handler().postDelayed(new Runnable(){
                             public void run() {
                                 //execute the task
-                                mCamera = Camera.open(mCameraindex);
+                                mCamera = Camera.open(mCameraID);
                                 mCamera.setDisplayOrientation(90);
                                 //Camera.Parameters parameters = mCamera.getParameters();
                                 //parameters.setRotation(180);
@@ -502,30 +515,6 @@ public class MainActivity extends Activity {
                     }else {
                         Log.e(TAG, "Do not need change camera mode!");
                     }
-                    /*
-                    switch (mCamera_mode) {
-                        case 0:
-                            if(mCamera == null){
-
-                            }else {
-
-                            }
-                            if(mCamera_sub == null){
-
-                            }
-                            break;
-                        case 1:
-                            break;
-                        default:
-                            Toast.makeText(MainActivity.this, "didn`t support!", Toast.LENGTH_LONG).show();
-                            break;
-                    }
-                    //faceDetect.updateFaceStatus(specificNo);
-                    break;
-                default:
-                    Toast.makeText(MainActivity.this, "select error!", Toast.LENGTH_LONG).show();
-                    break;
-                    */
             }
         }
 
@@ -638,105 +627,76 @@ public class MainActivity extends Activity {
                     */
 
                     if(mCameraID == 0){
-                            /*
-                            mCameraindex = FindFrontCamera();
-                            if (mCameraindex == -1){
-                                Toast.makeText(MainActivity.this, "No front camera!", Toast.LENGTH_LONG).show();
-                                return;
-                            }
-
-                            mCamera = Camera.open(mCameraindex);
-                            mCamera.setDisplayOrientation(90);
-                            parameters = mCamera.getParameters();
-                            parameters.setRotation(270);
-                            mCamera.setParameters(parameters);
-
-                            try {
-                                mCamera.setPreviewDisplay(previewCamera.getHolder());//通过surfaceview显示取景画面
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                                Log.e(TAG, "setPreviewDisplay error!");
-                            }
-                            */
-
                             //mCamera.stopPreview();
                             //mCamera_sub.stopPreview();
+                           if(mCamera_mode == 0){
+                               mCamera_sub.startPreview();
+                               mCamera.stopPreview();
+                               mCameraID = 1;
+                           }else {
 
-                            mCamera_sub.startPreview();
-                            mCamera.stopPreview();
-                            mCameraID = 1;
+                                mCamera.stopPreview();
+                                mCamera.release();
+                                mCamera=null;
 
-                    }else if(mCameraID == 1){
-                            /*
-                            mCameraindex = FindBackCamera_2();
-                            if (mCameraindex == -1){
-                                Toast.makeText(MainActivity.this, "No rear camera_2!", Toast.LENGTH_LONG).show();
+                                mCamera = Camera.open(mCameraindex_front);
+                                mCamera.setDisplayOrientation(90);
+                                //parameters = mCamera.getParameters();
+                                //parameters.setRotation(270);
+                                //mCamera.setParameters(parameters);
 
-                                mCameraindex = FindBackCamera();
-                                if (mCameraindex == -1){
-                                    Toast.makeText(MainActivity.this, "No rear camera!", Toast.LENGTH_LONG).show();
-                                    return;
-                                }else {
-                                    mCameraID = 0;
+                                try {
+                                    mCamera.setPreviewDisplay(previewCamera_full.getHolder());//通过surfaceview显示取景画面
+                                } catch (IOException e) {
+                                    e.printStackTrace();
+                                    Log.e(TAG, "setPreviewDisplay error!");
                                 }
-                            }else {
-                                mCameraID = 2;
-                            }
+                               mCamera.startPreview();
+                               mCameraID=1;
+                           }
+                    }else if(mCameraID == 1){
 
-                            mCamera = Camera.open(mCameraindex);
+                        if(mCamera_mode == 0){
+                            mCamera.startPreview();
+                            mCamera_sub.stopPreview();
+                            mCameraID = 0;
+                        }else {
+                            mCamera.stopPreview();
+                            mCamera.release();
+                            mCamera=null;
+
+                            mCamera = Camera.open(mCameraindex_sub);
                             mCamera.setDisplayOrientation(90);
-                            parameters = mCamera.getParameters();
-                            parameters.setRotation(90);
-                            mCamera.setParameters(parameters);
+                            //parameters = mCamera.getParameters();
+                            //parameters.setRotation(90);
+                            //mCamera.setParameters(parameters);
                             try {
-                                mCamera.setPreviewDisplay(previewCamera.getHolder());//通过surfaceview显示取景画面
+                                mCamera.setPreviewDisplay(previewCamera_full.getHolder());//通过surfaceview显示取景画面
                             } catch (IOException e) {
                                 e.printStackTrace();
                                 Log.e(TAG, "setPreviewDisplay error!");
                             }
-                            */
-
-
-                        //mCamera.stopPreview();
-                        //mCamera_sub.stopPreview();
-
-                        mCamera.startPreview();
-                        mCamera_sub.stopPreview();
-                        mCameraID = 0;
-
-                    }else if(mCameraID == 2){
-                        /*
-                        mCameraindex = FindBackCamera();
-                        if (mCameraindex == -1){
-                            Toast.makeText(MainActivity.this, "No rear camera!", Toast.LENGTH_LONG).show();
-                            return;
+                            mCamera.startPreview();
+                            mCameraID=2;
                         }
+                    }else if(mCameraID == 2){
+                        mCamera.stopPreview();
+                        mCamera.release();
+                        mCamera=null;
 
-                        mCameraID = 0;
-                        */
-                        mCamera = Camera.open(mCameraindex_front);
-                        mCamera.setDisplayOrientation(90);
-                        parameters = mCamera.getParameters();
-                        parameters.setRotation(90);
-                        mCamera.setParameters(parameters);
+                        mCamera_sub = Camera.open(mCameraindex);
+                        mCamera_sub.setDisplayOrientation(90);
+                        //parameters = mCamera.getParameters();
+                        //parameters.setRotation(90);
+                        //mCamera.setParameters(parameters);
                         try {
-                            mCamera.setPreviewDisplay(previewCamera.getHolder());//通过surfaceview显示取景画面
+                            mCamera.setPreviewDisplay(previewCamera_full.getHolder());//通过surfaceview显示取景画面
                         } catch (IOException e) {
                             e.printStackTrace();
                             Log.e(TAG, "setPreviewDisplay error!");
                         }
-
-
+                        mCamera.startPreview();
                     }
-
-                    /*
-                    if(mCamera != null){
-                        Log.d(TAG, "Switch to "+mCameraindex);
-                        InitPinnerOther(mCamera);
-                        mCamera.startPreview(); //开始预览
-                        //faceDetect.startFaceDetection(mCamera, faceDetect, mCameraID); //add face detection after preview
-                    }
-                    */
                     break;
                 case R.id.button_video:
                     if(isRecording == false){
