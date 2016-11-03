@@ -18,9 +18,23 @@
 
 
         <SurfaceView
-            android:id="@+id/preView"
+            android:id="@+id/preView_full"
             android:layout_width="match_parent"
             android:layout_height="match_parent" />
+
+        <SurfaceView
+            android:id="@+id/preView"
+            android:layout_width="match_parent"
+            android:layout_height="300dp"
+            android:layout_weight="0.5"
+            android:layout_gravity="center_horizontal|top"/>
+
+        <SurfaceView
+            android:id="@+id/preView_sub"
+            android:layout_width="match_parent"
+            android:layout_height="300dp"
+            android:layout_weight="0.5"
+            android:layout_gravity="center_horizontal|bottom"/>
 
         <com.asus.sheldon.camera4fun.FaceView
             android:id="@+id/face_view"
@@ -59,13 +73,6 @@
             android:src="@drawable/video5" />
 
         <Spinner
-            android:id="@+id/resolution"
-            android:layout_width="120dp"
-            android:layout_height="40dp"
-            android:padding="1dip"
-            android:layout_gravity="left|top" />
-
-        <Spinner
             android:id="@+id/flashMode"
             android:layout_width="70dp"
             android:layout_height="40dp"
@@ -91,12 +98,12 @@
             android:layout_gravity="right|bottom" />
 
         <Spinner
-            android:id="@+id/Specific"
+            android:id="@+id/cameraMode"
             android:layout_width="70dp"
             android:layout_height="40dp"
-            android:entries="@array/specific"
+            android:entries="@array/cameraMode"
             android:padding="1dip"
-            android:layout_gravity="right|center_vertical" />
+            android:layout_gravity="left|top" />
 
     </FrameLayout>
 

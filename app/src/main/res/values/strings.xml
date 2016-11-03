@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Cam4Fun</string>
+    <string name="app_name">Cam4Dual</string>
     <string-array name="flashModeList">
         <item>OFF</item>
         <item>ON</item>
@@ -7,8 +7,8 @@
         <item>TORCH</item>
     </string-array>
 
-    <string-array name="specific">
-        <item>OFF</item>
-        <item>FIRE</item>
+    <string-array name="cameraMode">
+        <item>DUAL</item>
+        <item>NORMAL</item>
     </string-array>
 </resources>
