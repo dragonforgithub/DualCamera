@@ -1,8 +1,6 @@
 package com.asus.sheldon.camera4fun;
 
-import java.io.BufferedOutputStream;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
@@ -22,8 +20,6 @@ import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
-import android.graphics.Matrix;
-import android.graphics.Path;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.hardware.Camera;
@@ -33,8 +29,6 @@ import android.nfc.Tag;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
-import android.os.Message;
-import android.provider.MediaStore;
 import android.util.Log;
 import android.util.Size;
 import android.view.MotionEvent;
@@ -45,12 +39,7 @@ import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
-import android.widget.Button;
-import android.widget.GridView;
 import android.widget.ImageButton;
-import android.widget.ImageView;
-import android.widget.SimpleAdapter;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -61,6 +50,10 @@ public class MainActivity extends Activity {
     public SurfaceView previewCamera=null;
     public SurfaceView previewCamera_sub=null;
     public SurfaceView previewCamera_full=null;
+    public SurfaceView previewCamera_full_sub=null;
+
+    public FaceView faceView=null;
+    public TouchView touchView=null;
 
     //public TouchView touchView=null;
     public TextView timerTV=null;
@@ -104,6 +97,8 @@ public class MainActivity extends Activity {
     //public FaceDetection faceDetect;
     private boolean focuseDone=false;
     private boolean needMirror=false;
+    private boolean doZoom=true;
+    private boolean doZoom_sub=false;
 
     private Bitmap mThumbImage;
     //private ImageView showCameraIv;
@@ -175,6 +170,7 @@ public class MainActivity extends Activity {
         previewCamera = (SurfaceView) this.findViewById(R.id.preView);
         previewCamera_sub = (SurfaceView) this.findViewById(R.id.preView_sub);
         previewCamera_full = (SurfaceView) this.findViewById(R.id.preView_full);
+        previewCamera_full_sub = (SurfaceView) this.findViewById(R.id.preView_full_sub);
 
         mCameraindex = FindBackCamera();
         if (mCameraindex == -1){
@@ -194,9 +190,8 @@ public class MainActivity extends Activity {
 
     protected void onResume() {
         super.onResume();
-        Log.v(TAG, "onResume");
+        Log.i(TAG, "onResume");
         try {
-
             switch (mCamera_mode) {
                 case 0: //rear0 & rear1
                     if(mCamera == null){
@@ -227,13 +222,16 @@ public class MainActivity extends Activity {
         }
 
         //mOrientationListener.enable();
+        faceView = (FaceView)findViewById(R.id.face_view);
+        //faceDetect = new FaceDetection(this, faceView);
+        touchView = (TouchView)findViewById(R.id.touch_view);
+        touchView.setVisibility(View.INVISIBLE);
 
         if(mCamera_mode == 0){
-            mCameraSurPreview = new CameraPreview(this, mCamera, previewCamera, mCameraindex);
-            InitPinnerOther(mCamera); //设置下拉列表
-            mCamera.setDisplayOrientation(90);
-
             if(mCamera_sub != null){
+                mCameraSurPreview = new CameraPreview(this, mCamera, previewCamera, mCameraindex);
+                InitPinnerOther(mCamera); //设置下拉列表
+                mCamera.setDisplayOrientation(90);
 
                 mCameraSurPreview_sub = new CameraPreview(this, mCamera_sub, previewCamera_sub, mCameraindex_sub);
                 InitPinnerOther(mCamera_sub); //设置下拉列表
@@ -243,6 +241,10 @@ public class MainActivity extends Activity {
             mCameraSurPreview = new CameraPreview(this, mCamera, previewCamera_full, mCameraindex);
             InitPinnerOther(mCamera); //设置下拉列表
             mCamera.setDisplayOrientation(90);
+
+            //mCameraSurPreview_sub = new CameraPreview(this, mCamera_sub, previewCamera_full_sub, mCameraindex_sub);
+            //InitPinnerOther(mCamera_sub); //设置下拉列表
+            //mCamera_sub.setDisplayOrientation(90);
         }
 
         //touchView = (TouchView)findViewById(R.id.touch_view);
@@ -252,17 +254,15 @@ public class MainActivity extends Activity {
         //mSurRecorder = new sMediaRecorder(this, previewCamera, timerTV);
 
         //preview 800ms後,模擬點擊對焦調光,开启脸部识别
-        /*
         new Handler().postDelayed(new Runnable(){
             public void run() {
                 //execute the task
                 Camera.Parameters params = mCamera.getParameters();
                 Camera.Size previewSize = params.getPreviewSize();
                 setMouseClick(previewSize.height/2, previewSize.width/2);
-                faceDetect.startFaceDetection(mCamera, faceDetect, mCameraID); //add face detection after preview
+                //faceDetect.startFaceDetection(mCamera, faceDetect, mCameraID); //add face detection after preview
             }
         }, 800);
-        */
         Log.v(TAG, "onResume finish");
     }
 
@@ -275,16 +275,22 @@ public class MainActivity extends Activity {
             mOrientationListener.disable();
         }
 
-       // if(mSurRecorder != null && isRecording == true){
+        //if(mSurRecorder != null && isRecording == true){
         //    mSurRecorder.stopRecording();
         //}
 
         if (mCamera != null) {
             //faceDetect.stopFaceDetection(mCamera);
             mCamera.stopPreview();
-            mCamera.setPreviewCallback(null);
-            mCamera.release();
-            mCamera=null;
+            //mCamera.release();
+            //mCamera=null;
+        }
+
+        if (mCamera_sub != null) {
+            //faceDetect.stopFaceDetection(mCamera);
+            mCamera_sub.stopPreview();
+            //mCamera.release();
+            //mCamera=null;
         }
     }
 
@@ -299,7 +305,7 @@ public class MainActivity extends Activity {
          //   mSurRecorder.stopRecording();
         //}
         if(mCamera != null){
-
+            //faceDetect.stopFaceDetection(mCamera);
             mCamera.stopPreview();
             mCamera.release();
             mCamera=null;
@@ -440,6 +446,7 @@ public class MainActivity extends Activity {
                     mCamera_mode = arg2;
                     Log.i(TAG, "mCamera_mode:"+mCamera_mode);
                     if(mCamera_mode == 0 && mCamera_sub == null){
+                        //faceDetect.stopFaceDetection(mCamera);
                         mCamera.stopPreview();//释放资源
                         previewCamera_full.setVisibility(View.INVISIBLE);
                         //mCamera.release();//释放资源
@@ -470,7 +477,9 @@ public class MainActivity extends Activity {
                                     mCameraSurPreview.setMaxPreviewAndPictureSize(mCamera_sub);
                                     mCamera.setPreviewDisplay(previewCamera.getHolder());
                                     mCamera_sub.setPreviewDisplay(previewCamera_sub.getHolder());
+
                                     mCamera.startPreview();
+                                    //faceDetect.startFaceDetection(mCamera, faceDetect, mCameraID);
                                     mCamera_sub.startPreview();
                                 } catch (IOException e) {
                                     e.printStackTrace();
@@ -482,6 +491,8 @@ public class MainActivity extends Activity {
                     }else if(mCamera_mode == 1 && mCamera_sub != null){
 
                         mCamera_sub.stopPreview();
+
+                        //faceDetect.stopFaceDetection(mCamera);
                         mCamera.stopPreview();//释放资源
                         previewCamera_sub.setVisibility(View.INVISIBLE);
                         previewCamera.setVisibility(View.INVISIBLE);
@@ -496,19 +507,37 @@ public class MainActivity extends Activity {
                         new Handler().postDelayed(new Runnable(){
                             public void run() {
                                 //execute the task
-                                mCamera = Camera.open(mCameraID);
+                                previewCamera_full_sub.setVisibility(View.INVISIBLE);
+                                previewCamera_full.setVisibility(View.VISIBLE);
+
+                                mCamera = Camera.open(mCameraindex);
                                 mCamera.setDisplayOrientation(90);
                                 //Camera.Parameters parameters = mCamera.getParameters();
                                 //parameters.setRotation(180);
                                 //mCamera.setParameters(parameters);
-                                previewCamera_full.setVisibility(View.VISIBLE);
                                 mCameraSurPreview.setMaxPreviewAndPictureSize(mCamera);
+
+                                mCamera_sub = Camera.open(mCameraindex_sub);
+                                mCamera_sub.setDisplayOrientation(90);
+                                mCameraSurPreview_sub.setMaxPreviewAndPictureSize(mCamera_sub);
+
                                 try {
-                                    mCamera.setPreviewDisplay(previewCamera_full.getHolder());//通过surfaceview显示取景画面
+                                    //通过surfaceview显示取景画面
+                                    mCamera.setPreviewDisplay(previewCamera_full.getHolder());
                                 } catch (IOException e) {
                                     e.printStackTrace();
                                 }
+
+                                try {
+                                    //通过surfaceview显示取景画面
+                                    mCamera_sub.setPreviewDisplay(previewCamera_full_sub.getHolder());
+                                } catch (IOException e) {
+                                    e.printStackTrace();
+                                }
+
                                 mCamera.startPreview();
+                                //mCamera_sub.startPreview();
+                                //faceDetect.startFaceDetection(mCamera, faceDetect, mCameraID);
                             }
                         }, 500);
 
@@ -584,6 +613,42 @@ public class MainActivity extends Activity {
                 Log.e(TAG,e.getMessage());
             }
 
+            mCamera.startPreview(); //开始预览
+            //faceDetect.startFaceDetection(mCamera, faceDetect, mCameraID); //add face detection after preview
+            mThumbImage = ThumbnailUtils.extractThumbnail(BitmapFactory.decodeFile(savePath), 320, 240);
+            //showCameraIv.setImageBitmap(mThumbImage);
+            //galleryAddPic(savePath);
+            //Toast.makeText(MainActivity.this,picWidth+"x"+picHeight+savePath,Toast.LENGTH_LONG).show();
+            //See if need to enable or not
+            mCaptureButton.setEnabled(true);
+            mCaptureButton.setBackgroundColor(Color.TRANSPARENT);
+            //mCaptureButton.setImageDrawable(getResources().getDrawable(R.drawable.btn_shutter_default));
+        }
+    };
+
+    Camera.PictureCallback mPictureCallback_Sub = new Camera.PictureCallback() {
+        public void onPictureTaken(byte[] data, Camera camera) {
+            //set the picture save path
+            String savePath;
+            savePath = getOutputMediaFile();
+            if (savePath == null) {
+                Log.e(TAG, "Error creating media file, check storage permissions: ");
+                Toast.makeText(MainActivity.this,"creat media file fail",Toast.LENGTH_LONG).show();
+            }
+
+            try {
+                if (data != null && savePath != null){
+                    File rawOutput = new File(savePath);
+                    FileOutputStream outStream = new FileOutputStream(rawOutput);
+                    outStream.write(data);
+                    outStream.close();
+                }
+            }catch(IOException e){
+                Log.e(TAG,e.getMessage());
+            }
+
+            mCamera_sub.startPreview(); //开始预览
+            //faceDetect.startFaceDetection(mCamera, faceDetect, mCameraID); //add face detection after preview
 
             mThumbImage = ThumbnailUtils.extractThumbnail(BitmapFactory.decodeFile(savePath), 320, 240);
             //showCameraIv.setImageBitmap(mThumbImage);
@@ -593,8 +658,6 @@ public class MainActivity extends Activity {
             mCaptureButton.setEnabled(true);
             mCaptureButton.setBackgroundColor(Color.TRANSPARENT);
             //mCaptureButton.setImageDrawable(getResources().getDrawable(R.drawable.btn_shutter_default));
-            mCamera.startPreview(); //开始预览
-            //faceDetect.startFaceDetection(mCamera, faceDetect, mCameraID); //add face detection after preview
         }
     };
 
@@ -612,29 +675,23 @@ public class MainActivity extends Activity {
                     mCaptureButton.setBackgroundColor(Color.WHITE);
                     mCaptureButton.setEnabled(false);
                     mCamera.takePicture(null, null, mPictureCallback);
+                    if(mCamera_mode == 0 && mCamera_sub != null){
+                        mCamera_sub.takePicture(null, null, mPictureCallback_Sub);
+                    }
                     break;
                 case R.id.button_switch:
-                    /*
-                    if(mCamera != null){
-                        //faceDetect.stopFaceDetection(mCamera);
-                        mCamera.stopPreview();//停掉原来摄像头的预览
-                        mCamera.release();//释放资源
-                        mCamera = null;//取消原来摄像头
-                        //touchView.setVisibility(View.INVISIBLE);
-                        mCaptureButton.setEnabled(true);
-                        mCaptureButton.setBackgroundColor(Color.TRANSPARENT);
-                    }
-                    */
-
+                    mSwitchButton.setEnabled(false); //disable switch button
                     if(mCameraID == 0){
+                           mCameraID=1;
                             //mCamera.stopPreview();
                             //mCamera_sub.stopPreview();
                            if(mCamera_mode == 0){
                                mCamera_sub.startPreview();
-                               mCamera.stopPreview();
-                               mCameraID = 1;
-                           }else {
 
+                               //faceDetect.stopFaceDetection(mCamera);
+                               mCamera.stopPreview();
+                           }else {
+                                //faceDetect.stopFaceDetection(mCamera);
                                 mCamera.stopPreview();
                                 mCamera.release();
                                 mCamera=null;
@@ -649,18 +706,20 @@ public class MainActivity extends Activity {
                                     mCamera.setPreviewDisplay(previewCamera_full.getHolder());//通过surfaceview显示取景画面
                                 } catch (IOException e) {
                                     e.printStackTrace();
-                                    Log.e(TAG, "setPreviewDisplay error!");
+                                    Log.e(TAG, "setPreviewDisplay_full error!");
                                 }
                                mCamera.startPreview();
-                               mCameraID=1;
+                               //faceDetect.startFaceDetection(mCamera, faceDetect, mCameraID);
                            }
                     }else if(mCameraID == 1){
-
                         if(mCamera_mode == 0){
                             mCamera.startPreview();
+                            //faceDetect.startFaceDetection(mCamera, faceDetect, mCameraID);
                             mCamera_sub.stopPreview();
-                            mCameraID = 0;
+                            mCameraID=0;
                         }else {
+                            mCameraID=2;
+                            //faceDetect.stopFaceDetection(mCamera);
                             mCamera.stopPreview();
                             mCamera.release();
                             mCamera=null;
@@ -674,18 +733,20 @@ public class MainActivity extends Activity {
                                 mCamera.setPreviewDisplay(previewCamera_full.getHolder());//通过surfaceview显示取景画面
                             } catch (IOException e) {
                                 e.printStackTrace();
-                                Log.e(TAG, "setPreviewDisplay error!");
+                                Log.e(TAG, "setPreviewDisplay_sub error!");
                             }
                             mCamera.startPreview();
-                            mCameraID=2;
+                            //faceDetect.startFaceDetection(mCamera, faceDetect, mCameraID);
                         }
                     }else if(mCameraID == 2){
+                        mCameraID=0;
+                        //faceDetect.stopFaceDetection(mCamera);
                         mCamera.stopPreview();
                         mCamera.release();
                         mCamera=null;
 
-                        mCamera_sub = Camera.open(mCameraindex);
-                        mCamera_sub.setDisplayOrientation(90);
+                        mCamera = Camera.open(mCameraindex);
+                        mCamera.setDisplayOrientation(90);
                         //parameters = mCamera.getParameters();
                         //parameters.setRotation(90);
                         //mCamera.setParameters(parameters);
@@ -696,7 +757,9 @@ public class MainActivity extends Activity {
                             Log.e(TAG, "setPreviewDisplay error!");
                         }
                         mCamera.startPreview();
+                        //faceDetect.startFaceDetection(mCamera, faceDetect, mCameraID);
                     }
+                    mSwitchButton.setEnabled(true); //enable switch button
                     break;
                 case R.id.button_video:
                     if(isRecording == false){
@@ -713,7 +776,7 @@ public class MainActivity extends Activity {
                         //spinner_res.setVisibility(View.VISIBLE);
                         spinner_flash.setVisibility(View.VISIBLE);
                         //mSurRecorder.stopRecording();
-
+                        //faceDetect.stopFaceDetection(mCamera);
                         mCamera.stopPreview();
                         mCamera.startPreview();
                         //faceDetect.startFaceDetection(mCamera, faceDetect, mCameraID);//restart face detection
@@ -876,6 +939,61 @@ public class MainActivity extends Activity {
             }
             params.setZoom(zoom);
             camera.setParameters(params);
+
+            Log.i(TAG, "maxZoom:"+maxZoom+", zoom="+zoom);
+
+            if(mCamera_mode == 1){
+                if(zoom > 45 && zoom < 55 && doZoom){
+                    Log.i(TAG, "preview:2");
+                    //mCamera.stopPreview();
+                    //previewCamera_full.setVisibility(View.INVISIBLE);
+                    //mCamera_sub.startPreview();
+                    //previewCamera_full_sub.setVisibility(View.VISIBLE);
+
+                    mCamera.stopPreview();
+                    mCamera.release();
+                    mCamera=null;
+                    mCamera_sub = Camera.open(mCameraindex_sub);
+                    mCamera_sub.setDisplayOrientation(90);
+
+                    try {
+                        mCamera_sub.setPreviewDisplay(previewCamera_full.getHolder());//通过surfaceview显示取景画面
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                        Log.e(TAG, "setPreviewDisplay_sub error!");
+                    }
+                    mCamera_sub.startPreview();
+
+
+                    doZoom=false;
+                    doZoom_sub=true;
+                    //mCamera.startPreview();
+                }else if(zoom > 35 && zoom < 45 && doZoom_sub){
+                    Log.i(TAG, "preview:0");
+                    //mCamera.startPreview();
+                    //previewCamera_full.setVisibility(View.VISIBLE);
+                    //previewCamera_full_sub.setVisibility(View.INVISIBLE);
+
+                    mCamera_sub.stopPreview();
+                    mCamera_sub.release();
+                    mCamera_sub=null;
+                    mCamera = Camera.open(mCameraindex);
+                    mCamera.setDisplayOrientation(90);
+
+                    try {
+                        mCamera.setPreviewDisplay(previewCamera_full.getHolder());//通过surfaceview显示取景画面
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                        Log.e(TAG, "setPreviewDisplay_sub error!");
+                    }
+                    mCamera.startPreview();
+
+
+                    //mCamera_sub.stopPreview();
+                    doZoom_sub=false;
+                    doZoom=true;
+                }
+            }
         } else {
             Log.e(TAG, "zoom not supported");
         }
@@ -885,7 +1003,9 @@ public class MainActivity extends Activity {
     public boolean onTouchEvent(MotionEvent event) {
         Log.d(TAG, "event.getPointerCount() = "+event.getPointerCount());
         if (event.getPointerCount() == 1) {
-            handleFocusMetering(event, mCamera);
+            if(mCamera != null){
+                handleFocusMetering(event, mCamera);
+            }
             if(mCamera_sub != null){
                 handleFocusMetering(event, mCamera_sub);
             }
@@ -897,10 +1017,10 @@ public class MainActivity extends Activity {
                     break;
                 case MotionEvent.ACTION_MOVE:
                     float newDist = getFingerSpacing(event);
-                    if (newDist > oldDist) {
-                        handleZoom(true, mCamera);
-                    } else if (newDist < oldDist) {
-                        handleZoom(false, mCamera);
+                    if(doZoom){
+                        handleZoom(newDist > oldDist, mCamera);
+                    }else {
+                        handleZoom(newDist > oldDist, mCamera_sub);
                     }
                     oldDist = newDist;
                     break;

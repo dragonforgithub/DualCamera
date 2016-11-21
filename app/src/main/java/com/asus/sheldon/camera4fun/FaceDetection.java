@@ -1,22 +1,9 @@
 package com.asus.sheldon.camera4fun;
 
 import android.content.Context;
-import android.graphics.Canvas;
-import android.graphics.Color;
-import android.graphics.Matrix;
-import android.graphics.Paint;
-import android.graphics.RectF;
-import android.graphics.drawable.Drawable;
 import android.hardware.Camera;
-import android.hardware.camera2.params.Face;
-import android.os.Handler;
-import android.os.Message;
-import android.util.AttributeSet;
 import android.util.Log;
-import android.view.SurfaceView;
 import android.view.View;
-import android.widget.ImageView;
-import android.widget.LinearLayout;
 
 public class FaceDetection implements Camera.FaceDetectionListener {
 
