@@ -559,7 +559,7 @@ public class MainActivity extends Activity {
         mPictureFile = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
         //get the current time
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-        picPatch = mPictureFile.getPath() + File.separator + "IMG_" + timeStamp + ".jpg";
+        picPatch = mPictureFile.getPath() + File.separator + "IMG_" + timeStamp;
         Log.e(TAG, "picPatch:" + picPatch);
         return picPatch;
     }
@@ -602,6 +602,13 @@ public class MainActivity extends Activity {
             }
              */
 
+            if(mCameraID == 0)
+                savePath = savePath+"_imx362.jpg";
+            else if(mCameraID == 1)
+                savePath = savePath+"_imx214.jpg";
+            else if(mCameraID == 2)
+                savePath = savePath+"_3m3.jpg";
+
             try {
                 if (data != null && savePath != null){
                     File rawOutput = new File(savePath);
@@ -635,6 +642,8 @@ public class MainActivity extends Activity {
                 Log.e(TAG, "Error creating media file, check storage permissions: ");
                 Toast.makeText(MainActivity.this,"creat media file fail",Toast.LENGTH_LONG).show();
             }
+
+            savePath = savePath+"_3m3.jpg";
 
             try {
                 if (data != null && savePath != null){
