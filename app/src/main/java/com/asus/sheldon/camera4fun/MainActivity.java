@@ -78,6 +78,9 @@ public class MainActivity extends Activity {
     private boolean isRecording=false;
     private static boolean issupportFocuse=false;
 
+    private boolean isWidePreview=true;
+    private boolean isTelePreview=true;
+
     public int mOrientation=0;
 
     private List<String> supportedFlashMode;
@@ -683,8 +686,10 @@ public class MainActivity extends Activity {
                     //mCaptureButton.setBackgroundColor(Color.rgb(0x00,0xBF,0xFF)); //深天藍
                     mCaptureButton.setBackgroundColor(Color.WHITE);
                     mCaptureButton.setEnabled(false);
-                    mCamera.takePicture(null, null, mPictureCallback);
-                    if(mCamera_mode == 0 && mCamera_sub != null){
+                    if(isWidePreview){
+                        mCamera.takePicture(null, null, mPictureCallback);
+                    }
+                    if(mCamera_mode == 0 && mCamera_sub != null && isTelePreview){
                         mCamera_sub.takePicture(null, null, mPictureCallback_Sub);
                     }
                     break;
@@ -699,6 +704,8 @@ public class MainActivity extends Activity {
 
                                //faceDetect.stopFaceDetection(mCamera);
                                mCamera.stopPreview();
+                               isTelePreview=true;
+                               isWidePreview=false;
                            }else {
                                 //faceDetect.stopFaceDetection(mCamera);
                                 mCamera.stopPreview();
@@ -726,6 +733,8 @@ public class MainActivity extends Activity {
                             //faceDetect.startFaceDetection(mCamera, faceDetect, mCameraID);
                             mCamera_sub.stopPreview();
                             mCameraID=0;
+                            isWidePreview=true;
+                            isTelePreview=false;
                         }else {
                             mCameraID=2;
                             //faceDetect.stopFaceDetection(mCamera);
