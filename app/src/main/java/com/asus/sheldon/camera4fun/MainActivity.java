@@ -521,9 +521,9 @@ public class MainActivity extends Activity {
                                 //mCamera.setParameters(parameters);
                                 mCameraSurPreview.setMaxPreviewAndPictureSize(mCamera);
 
-                                mCamera_sub = Camera.open(mCameraindex_sub);
-                                mCamera_sub.setDisplayOrientation(90);
-                                mCameraSurPreview_sub.setMaxPreviewAndPictureSize(mCamera_sub);
+                                //mCamera_sub = Camera.open(mCameraindex_sub);
+                                //mCamera_sub.setDisplayOrientation(90);
+                                //mCameraSurPreview_sub.setMaxPreviewAndPictureSize(mCamera_sub);
 
                                 try {
                                     //通过surfaceview显示取景画面
@@ -532,12 +532,12 @@ public class MainActivity extends Activity {
                                     e.printStackTrace();
                                 }
 
-                                try {
-                                    //通过surfaceview显示取景画面
-                                    mCamera_sub.setPreviewDisplay(previewCamera_full_sub.getHolder());
-                                } catch (IOException e) {
-                                    e.printStackTrace();
-                                }
+                                //try {
+                                //    //通过surfaceview显示取景画面
+                                //    mCamera_sub.setPreviewDisplay(previewCamera_full_sub.getHolder());
+                                //} catch (IOException e) {
+                                //   e.printStackTrace();
+                                //}
 
                                 mCamera.startPreview();
                                 //mCamera_sub.startPreview();
@@ -710,7 +710,7 @@ public class MainActivity extends Activity {
                                 mCamera.release();
                                 mCamera=null;
 
-                                mCamera = Camera.open(mCameraindex_front);
+                                mCamera = Camera.open(1);
                                 mCamera.setDisplayOrientation(90);
                                 //parameters = mCamera.getParameters();
                                 //parameters.setRotation(270);
