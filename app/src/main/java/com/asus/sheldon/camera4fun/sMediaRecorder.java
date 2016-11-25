@@ -120,7 +120,7 @@ class sMediaRecorder extends SurfaceView implements SurfaceHolder.Callback{
         return s;
     }
 
-    public void startRecording(Camera vCamera, int vCameraId) {
+    public void startRecording(Camera vCamera, int vCameraId, SurfaceView svUpdate) {
         Log.i(TAG, "start Recording:");
 
         vCamera.unlock(); //让media程序存取到相機
@@ -145,6 +145,7 @@ class sMediaRecorder extends SurfaceView implements SurfaceHolder.Callback{
         mMediaRecorder.setVideoEncodingBitRate(5*1024*1024); //设置帧率调节清晰度
 
         //mMediaRecorder.setVideoFrameRate(20);
+        mMediaHolder=svUpdate.getHolder();
         mMediaRecorder.setPreviewDisplay(mMediaHolder.getSurface());
 
 

@@ -63,7 +63,7 @@ public class MainActivity extends Activity {
     private CameraPreview mCameraSurPreview = null;
     private CameraPreview mCameraSurPreview_sub = null;
 
-    //private sMediaRecorder mSurRecorder = null;
+    private sMediaRecorder mSurRecorder = null;
     private ImageButton mCaptureButton = null;
     private ImageButton mSwitchButton = null;
     private ImageButton mVideoButton = null;
@@ -97,7 +97,7 @@ public class MainActivity extends Activity {
     private float oldDist = 1f;
 
     //view detection
-    //public FaceDetection faceDetect;
+    public FaceDetection faceDetect;
     private boolean focuseDone=false;
     private boolean needMirror=false;
     private boolean doZoom=true;
@@ -127,7 +127,7 @@ public class MainActivity extends Activity {
         //SCREEN_ORIENTATION_USER： 用户当前的首选方向
             //setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_NOSENSOR);
 
-        //mOrientationListener = new MyOrientationDetector(this);
+        mOrientationListener = new MyOrientationDetector(this);
 
         // Add a listener to the Capture button
         mCaptureButton = (ImageButton) findViewById(R.id.button_capture);
@@ -224,9 +224,9 @@ public class MainActivity extends Activity {
             return;
         }
 
-        //mOrientationListener.enable();
+        mOrientationListener.enable();
         faceView = (FaceView)findViewById(R.id.face_view);
-        //faceDetect = new FaceDetection(this, faceView);
+        faceDetect = new FaceDetection(this, faceView);
         touchView = (TouchView)findViewById(R.id.touch_view);
         touchView.setVisibility(View.INVISIBLE);
 
@@ -254,7 +254,7 @@ public class MainActivity extends Activity {
         //touchView.setVisibility(View.INVISIBLE);
         timerTV = (TextView) this.findViewById(R.id.videoTimer);
         timerTV.setVisibility(View.INVISIBLE);
-        //mSurRecorder = new sMediaRecorder(this, previewCamera, timerTV);
+        mSurRecorder = new sMediaRecorder(this, previewCamera, timerTV);
 
         //preview 800ms後,模擬點擊對焦調光,开启脸部识别
         new Handler().postDelayed(new Runnable(){
@@ -263,7 +263,7 @@ public class MainActivity extends Activity {
                 Camera.Parameters params = mCamera.getParameters();
                 Camera.Size previewSize = params.getPreviewSize();
                 setMouseClick(previewSize.height/2, previewSize.width/2);
-                //faceDetect.startFaceDetection(mCamera, faceDetect, mCameraID); //add face detection after preview
+                faceDetect.startFaceDetection(mCamera, faceDetect, mCameraID); //add face detection after preview
             }
         }, 800);
         Log.v(TAG, "onResume finish");
@@ -278,19 +278,19 @@ public class MainActivity extends Activity {
             mOrientationListener.disable();
         }
 
-        //if(mSurRecorder != null && isRecording == true){
-        //    mSurRecorder.stopRecording();
-        //}
+        if(mSurRecorder != null && isRecording == true){
+            mSurRecorder.stopRecording();
+        }
 
         if (mCamera != null) {
-            //faceDetect.stopFaceDetection(mCamera);
+            faceDetect.stopFaceDetection(mCamera);
             mCamera.stopPreview();
             //mCamera.release();
             //mCamera=null;
         }
 
         if (mCamera_sub != null) {
-            //faceDetect.stopFaceDetection(mCamera);
+            faceDetect.stopFaceDetection(mCamera);
             mCamera_sub.stopPreview();
             //mCamera.release();
             //mCamera=null;
@@ -304,19 +304,20 @@ public class MainActivity extends Activity {
         if(mOrientationListener != null){
             mOrientationListener.disable();
         }
-        //if(mSurRecorder != null && isRecording == true){
-         //   mSurRecorder.stopRecording();
-        //}
+
+        if(mSurRecorder != null && isRecording == true){
+            mSurRecorder.stopRecording();
+        }
+
         if(mCamera != null){
-            //faceDetect.stopFaceDetection(mCamera);
-            mCamera.stopPreview();
+            faceDetect.stopFaceDetection(mCamera);
+            //mCamera.stopPreview();
             mCamera.release();
             mCamera=null;
         }
 
         if(mCamera_sub != null){
-
-            mCamera_sub.stopPreview();
+            //mCamera_sub.stopPreview();
             mCamera_sub.release();
             mCamera_sub=null;
         }
@@ -449,7 +450,7 @@ public class MainActivity extends Activity {
                     mCamera_mode = arg2;
                     Log.i(TAG, "mCamera_mode:"+mCamera_mode);
                     if(mCamera_mode == 0 && mCamera_sub == null){
-                        //faceDetect.stopFaceDetection(mCamera);
+                        faceDetect.stopFaceDetection(mCamera);
                         mCamera.stopPreview();//释放资源
                         previewCamera_full.setVisibility(View.INVISIBLE);
                         //mCamera.release();//释放资源
@@ -482,7 +483,7 @@ public class MainActivity extends Activity {
                                     mCamera_sub.setPreviewDisplay(previewCamera_sub.getHolder());
 
                                     mCamera.startPreview();
-                                    //faceDetect.startFaceDetection(mCamera, faceDetect, mCameraID);
+                                    faceDetect.startFaceDetection(mCamera, faceDetect, mCameraID);
                                     mCamera_sub.startPreview();
                                 } catch (IOException e) {
                                     e.printStackTrace();
@@ -495,7 +496,7 @@ public class MainActivity extends Activity {
 
                         mCamera_sub.stopPreview();
 
-                        //faceDetect.stopFaceDetection(mCamera);
+                        faceDetect.stopFaceDetection(mCamera);
                         mCamera.stopPreview();//释放资源
                         previewCamera_sub.setVisibility(View.INVISIBLE);
                         previewCamera.setVisibility(View.INVISIBLE);
@@ -540,7 +541,7 @@ public class MainActivity extends Activity {
 
                                 mCamera.startPreview();
                                 //mCamera_sub.startPreview();
-                                //faceDetect.startFaceDetection(mCamera, faceDetect, mCameraID);
+                                faceDetect.startFaceDetection(mCamera, faceDetect, mCameraID);
                             }
                         }, 500);
 
@@ -624,7 +625,6 @@ public class MainActivity extends Activity {
             }
 
             mCamera.startPreview(); //开始预览
-            //faceDetect.startFaceDetection(mCamera, faceDetect, mCameraID); //add face detection after preview
             mThumbImage = ThumbnailUtils.extractThumbnail(BitmapFactory.decodeFile(savePath), 320, 240);
             //showCameraIv.setImageBitmap(mThumbImage);
             //galleryAddPic(savePath);
@@ -660,8 +660,6 @@ public class MainActivity extends Activity {
             }
 
             mCamera_sub.startPreview(); //开始预览
-            //faceDetect.startFaceDetection(mCamera, faceDetect, mCameraID); //add face detection after preview
-
             mThumbImage = ThumbnailUtils.extractThumbnail(BitmapFactory.decodeFile(savePath), 320, 240);
             //showCameraIv.setImageBitmap(mThumbImage);
             //galleryAddPic(savePath);
@@ -702,12 +700,12 @@ public class MainActivity extends Activity {
                            if(mCamera_mode == 0){
                                mCamera_sub.startPreview();
 
-                               //faceDetect.stopFaceDetection(mCamera);
+                               faceDetect.stopFaceDetection(mCamera);
                                mCamera.stopPreview();
                                isTelePreview=true;
                                isWidePreview=false;
                            }else {
-                                //faceDetect.stopFaceDetection(mCamera);
+                                faceDetect.stopFaceDetection(mCamera);
                                 mCamera.stopPreview();
                                 mCamera.release();
                                 mCamera=null;
@@ -725,19 +723,19 @@ public class MainActivity extends Activity {
                                     Log.e(TAG, "setPreviewDisplay_full error!");
                                 }
                                mCamera.startPreview();
-                               //faceDetect.startFaceDetection(mCamera, faceDetect, mCameraID);
+                               faceDetect.startFaceDetection(mCamera, faceDetect, mCameraID);
                            }
                     }else if(mCameraID == 1){
                         if(mCamera_mode == 0){
                             mCamera.startPreview();
-                            //faceDetect.startFaceDetection(mCamera, faceDetect, mCameraID);
+                            faceDetect.startFaceDetection(mCamera, faceDetect, mCameraID);
                             mCamera_sub.stopPreview();
                             mCameraID=0;
                             isWidePreview=true;
                             isTelePreview=false;
                         }else {
                             mCameraID=2;
-                            //faceDetect.stopFaceDetection(mCamera);
+                            faceDetect.stopFaceDetection(mCamera);
                             mCamera.stopPreview();
                             mCamera.release();
                             mCamera=null;
@@ -754,11 +752,11 @@ public class MainActivity extends Activity {
                                 Log.e(TAG, "setPreviewDisplay_sub error!");
                             }
                             mCamera.startPreview();
-                            //faceDetect.startFaceDetection(mCamera, faceDetect, mCameraID);
+                            faceDetect.startFaceDetection(mCamera, faceDetect, mCameraID);
                         }
                     }else if(mCameraID == 2){
                         mCameraID=0;
-                        //faceDetect.stopFaceDetection(mCamera);
+                        faceDetect.stopFaceDetection(mCamera);
                         mCamera.stopPreview();
                         mCamera.release();
                         mCamera=null;
@@ -775,31 +773,36 @@ public class MainActivity extends Activity {
                             Log.e(TAG, "setPreviewDisplay error!");
                         }
                         mCamera.startPreview();
-                        //faceDetect.startFaceDetection(mCamera, faceDetect, mCameraID);
+                        faceDetect.startFaceDetection(mCamera, faceDetect, mCameraID);
                     }
                     mSwitchButton.setEnabled(true); //enable switch button
                     break;
                 case R.id.button_video:
+                    Log.e(TAG, "videoRecording_mCameraID = "+mCameraID);
                     if(isRecording == false){
                         mSwitchButton.setVisibility(View.INVISIBLE);
                         mVideoButton.setBackgroundColor(Color.RED);
-                        //faceDetect.stopFaceDetection(mCamera);//stop face detection
+                        faceDetect.stopFaceDetection(mCamera);//stop face detection
                         //spinner_res.setVisibility(View.INVISIBLE);
                         spinner_flash.setVisibility(View.INVISIBLE);
-                        //mSurRecorder.startRecording(mCamera, mCameraID);
+                        if(mCamera_mode==1){
+                            mSurRecorder.startRecording(mCamera, mCameraID,previewCamera_full);
+                        }else {
+                            mSurRecorder.startRecording(mCamera, mCameraID,previewCamera);
+                        }
+
                         isRecording = true;
                     }
                     else{
                         mVideoButton.setBackgroundColor(Color.TRANSPARENT);
                         //spinner_res.setVisibility(View.VISIBLE);
                         spinner_flash.setVisibility(View.VISIBLE);
-                        //mSurRecorder.stopRecording();
+                        mSurRecorder.stopRecording();
                         //faceDetect.stopFaceDetection(mCamera);
-                        mCamera.stopPreview();
+                        //mCamera.stopPreview();
                         mCamera.startPreview();
-                        //faceDetect.startFaceDetection(mCamera, faceDetect, mCameraID);//restart face detection
+                        faceDetect.startFaceDetection(mCamera, faceDetect, mCameraID);//restart face detection
                         mSwitchButton.setVisibility(View.VISIBLE);
-
                         isRecording = false;
                     }
                     break;
@@ -960,6 +963,7 @@ public class MainActivity extends Activity {
 
             Log.i(TAG, "maxZoom:"+maxZoom+", zoom="+zoom);
 
+            /* //zoom switch TBD.......
             if(mCamera_mode == 1){
                 if(zoom > 45 && zoom < 55 && doZoom){
                     Log.i(TAG, "preview:2");
@@ -1012,6 +1016,7 @@ public class MainActivity extends Activity {
                     doZoom=true;
                 }
             }
+            */
         } else {
             Log.e(TAG, "zoom not supported");
         }
