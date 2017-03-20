@@ -144,7 +144,7 @@ class sMediaRecorder extends SurfaceView implements SurfaceHolder.Callback{
         mMediaRecorder.setVideoSize(1920,1080);
         mMediaRecorder.setVideoEncodingBitRate(5*1024*1024); //设置帧率调节清晰度
 
-        //mMediaRecorder.setVideoFrameRate(20);
+        mMediaRecorder.setVideoFrameRate(20);
         mMediaHolder=svUpdate.getHolder();
         mMediaRecorder.setPreviewDisplay(mMediaHolder.getSurface());
 
@@ -184,14 +184,14 @@ class sMediaRecorder extends SurfaceView implements SurfaceHolder.Callback{
         Log.i(TAG, "stop Recording:");
 
         try {
-                galleryAddVideo(mRecAudioFile.getAbsolutePath()); //顯示到圖庫
-                vtimer.setVisibility(INVISIBLE);
                 if(mMediaRecorder != null){
                     handler.removeCallbacks(task);
                     mMediaRecorder.stop();
                     mMediaRecorder.release();
                     mMediaRecorder = null;
                 }
+                galleryAddVideo(mRecAudioFile.getAbsolutePath()); //顯示到圖庫
+                vtimer.setVisibility(INVISIBLE);
             } catch (Exception e) {
                 Log.e(TAG, "stop recorder error！");
                 e.printStackTrace();

@@ -50,7 +50,6 @@ public class MainActivity extends Activity {
     public SurfaceView previewCamera=null;
     public SurfaceView previewCamera_sub=null;
     public SurfaceView previewCamera_full=null;
-    public SurfaceView previewCamera_full_sub=null;
 
     public FaceView faceView=null;
     public TouchView touchView=null;
@@ -173,7 +172,6 @@ public class MainActivity extends Activity {
         previewCamera = (SurfaceView) this.findViewById(R.id.preView);
         previewCamera_sub = (SurfaceView) this.findViewById(R.id.preView_sub);
         previewCamera_full = (SurfaceView) this.findViewById(R.id.preView_full);
-        previewCamera_full_sub = (SurfaceView) this.findViewById(R.id.preView_full_sub);
 
         mCameraindex = FindBackCamera();
         if (mCameraindex == -1){
@@ -244,10 +242,6 @@ public class MainActivity extends Activity {
             mCameraSurPreview = new CameraPreview(this, mCamera, previewCamera_full, mCameraindex);
             InitPinnerOther(mCamera); //设置下拉列表
             mCamera.setDisplayOrientation(90);
-
-            //mCameraSurPreview_sub = new CameraPreview(this, mCamera_sub, previewCamera_full_sub, mCameraindex_sub);
-            //InitPinnerOther(mCamera_sub); //设置下拉列表
-            //mCamera_sub.setDisplayOrientation(90);
         }
 
         //touchView = (TouchView)findViewById(R.id.touch_view);
@@ -511,7 +505,6 @@ public class MainActivity extends Activity {
                         new Handler().postDelayed(new Runnable(){
                             public void run() {
                                 //execute the task
-                                previewCamera_full_sub.setVisibility(View.INVISIBLE);
                                 previewCamera_full.setVisibility(View.VISIBLE);
 
                                 mCamera = Camera.open(mCameraindex);
@@ -780,29 +773,36 @@ public class MainActivity extends Activity {
                 case R.id.button_video:
                     Log.e(TAG, "videoRecording_mCameraID = "+mCameraID);
                     if(isRecording == false){
+                        mCaptureButton.setEnabled(false);
                         mSwitchButton.setVisibility(View.INVISIBLE);
                         mVideoButton.setBackgroundColor(Color.RED);
                         faceDetect.stopFaceDetection(mCamera);//stop face detection
                         //spinner_res.setVisibility(View.INVISIBLE);
                         spinner_flash.setVisibility(View.INVISIBLE);
+
                         if(mCamera_mode==1){
                             mSurRecorder.startRecording(mCamera, mCameraID,previewCamera_full);
                         }else {
                             mSurRecorder.startRecording(mCamera, mCameraID,previewCamera);
                         }
-
                         isRecording = true;
                     }
                     else{
-                        mVideoButton.setBackgroundColor(Color.TRANSPARENT);
-                        //spinner_res.setVisibility(View.VISIBLE);
-                        spinner_flash.setVisibility(View.VISIBLE);
+
                         mSurRecorder.stopRecording();
-                        //faceDetect.stopFaceDetection(mCamera);
-                        //mCamera.stopPreview();
-                        mCamera.startPreview();
-                        faceDetect.startFaceDetection(mCamera, faceDetect, mCameraID);//restart face detection
+                        mCamera.stopPreview();
+
                         mSwitchButton.setVisibility(View.VISIBLE);
+                        mVideoButton.setBackgroundColor(Color.TRANSPARENT);
+                        spinner_flash.setVisibility(View.VISIBLE);
+                        mCaptureButton.setEnabled(true);
+                        mCamera.startPreview();
+                        try {
+                            Thread.sleep(100);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                        faceDetect.startFaceDetection(mCamera, faceDetect, mCameraID);//restart face detection
                         isRecording = false;
                     }
                     break;

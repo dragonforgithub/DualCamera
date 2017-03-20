@@ -23,11 +23,6 @@
             android:layout_height="match_parent" />
 
         <SurfaceView
-            android:id="@+id/preView_full_sub"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent" />
-
-        <SurfaceView
             android:id="@+id/preView"
             android:layout_width="match_parent"
             android:layout_height="300dp"
